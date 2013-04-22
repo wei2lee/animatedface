@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+    
+    
+<!--
+<script src="js/objectdetect.js"></script>
+<script src="js/objectdetect.frontalface.js"></script>
+<script src="js/objectdetect.eye.js"></script>
+<script src="js/objectdetect.mouth.js"></script>
+<script src="js/jquery.js"></script>
+<script src="js/jquery.objectdetect.js"></script>-->
+<script src="js/jquery.json-2.4.js"></script>
+    
+    
+<script src="js/sprintf-0.7-beta1.js"></script>
+<!--<script src="js/Stats.js"></script>-->
+
+<script src="js/k3d/mathlib.js"></script>
+<script src="js/k3d/k3d_main.js"></script>
+<script src="js/k3d/k3d_controller.js"></script>
+<script src="js/k3d/k3d_object.js"></script>
+<script src="js/k3d/k3d_light.js"></script>
+<script src="js/k3d/k3d_renderer.js"></script>
+<!--<script src="js/pixastic.custom.js"></script>-->
+
+<style>
+#srcimg {
+    border:1px solid #cccccc;
+}
+    
+#canvas {
+    border:1px solid #cccccc;
+}
+    
+</style>
+
+<img id=srcimg>
+<div id=container>
+    <canvas id=canvas width=512 height=512></canvas>
+</div>
+
+
+
+<script>
+    
+var app_skybiometry = {
+    key:'b628265034474b57bc2d306faf253dbf',
+    secret:'27616ef975b84b2da2c7e4861643dea9'
+};
+var DEBUG = {FPS:1};
+var bitmaps = [];
+var textures = [];
+var keyFrames = [];
+var keyFramesPoint = [];
+var gwn = 8;
+var ghn = 8;
+var gw = 180;
+var gh = 280;
+//var img_src = 'https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTgSSw-jq0hL3BJFMI0xSIp4DaaFA64E66ocIWQEqe5j15dfq8h';
+//var img_src = 'images/girlb2.jpg';
+var img_src = 'images/man.jpg';
+var fdres_src = 'facedetect.man.json';
+var k3d;
+var obj;
+var fg = {
+    
+    
+};
+var fdres;
+
+
+
+$(window).load(initBitmaps);
+    
+function initBitmaps()
+{
+    
+   $('#srcimg').attr('src', img_src);
+   // get the images loading
+   bitmaps.push(new Image());
+   var loader = new Preloader();
+   loader.addImage(bitmaps[0], img_src);
+   loader.onLoadCallback(initFaceDetection);
+}
+    
+function initFaceDetection() {
+    
+    $.ajax({
+        url:fdres_src,
+        dataType:'json',
+        error:function(jqXHR, textStatus, errorThrown){
+            console.log('error@' + textStatus + ',' + errorThrown);   
+        }, 
+        success:function(data, textStatus, jqXHR){
+            //console.log('success@' + textStatus + ',' + data);
+            console.log(data);
+            fdres = data;
+            
+            
+            
+            fg.mouth.bound = fdres.photos[0].width * fdres.photos[0].tags[0].mouth_center.x;
+            fg.mouth.bound = fdres.photos[0].width * fdres.photos[0].tags[0].mouth_center.x;
+            
+            fg = {
+              leftEye: {bound:{x:0, y:0, w:0, h:0}},
+              rightEye:{bound:{x:0, y:0, w:0, h:0}},
+              mouth:{bound:{x:-10, y:-24, w:30, h:20}, gxs:[1,2,3], gys:[1,2,3]},
+              gxs:[-113, -10, 5, 20, +113],
+              gys:[-113, -24, -14, -4, +113],
+              gw:227,
+              gh:227
+            };
+                    
+            initK3D();        
+            
+        }
+    });
+    
+    
+    return;//*/
+    
+    //http://api.skybiometry.com/fc/{API method}.{response format}?api_key=...&api_secret=...&{other parameters}   
+    $.ajax({
+        //url:'http://api.jquery.com/jQuery.ajax/',
+        //url:'http://malaysia.yahoo.com/',
+        url:'http://api.skybiometry.com/fc/faces/detect.json?api_key=' + app_skybiometry.key + '&api_secret=' + app_skybiometry.secret + '&urls=' + img_src + '&attributes=all',
+        error:function(jqXHR, textStatus, errorThrown){
+            console.log('error@' + textStatus + ',' + errorThrown);   
+        },
+        success:function(data, textStatus, jqXHR){
+            console.log('success@' + textStatus + ',' + data);
+            console.log($.toJSON(data));
+        }
+    }).done(
+        function(data){
+            console.log('done@' + data);   
+            console.log(data);
+        }
+    );
+}
+    
+function initK3D() {
+   gw = bitmaps[0].width;
+   gh = bitmaps[0].height;
+       
+       
+   var canvas = document.getElementById('canvas');
+   
+   // bind a K3D Controller object to the canvas
+   // - it is responsible for managing the K3D objects displayed within it
+   k3d = new K3D.RequestAnimController(canvas);
+   
+   // create a K3D object for rendering
+   initObject();
+   //initKeyFrame();
+
+   // begin the rendering and animation immediately
+   k3d.paused = false;
+    
+   k3d.callback = updateK3D;
+    
+   k3d.frame();
+
+}
+
+    
+    
+var frameCnt = 0;
+var kfInd = 0;
+function updateK3D(k3d) {
+    
+    return;
+    var obj = this.objects[0];
+    if(frameCnt >= 4) {
+        obj.points = keyFrames[kfInd].value;
+        kfInd++; if(kfInd >= keyFrames.length) kfInd -= keyFrames.length;
+        frameCnt -= 4;
+    }
+    frameCnt++;
+    
+}
+   
+
+function initObject() {
+    
+    
+    
+    //////////////
+   obj = new K3D.K3DObject();
+    
+   obj.textures.push(bitmaps[0]);  
+    
+   var _points = [
+        {x:-fg.gw/2, y:+fg.gh/2, z:0},
+        {x:+fg.gw/2, y:+fg.gh/2, z:0},
+        {x:+fg.gw/2, y:-fg.gh/2, z:0},
+        {x:-fg.gw/2, y:-fg.gh/2, z:0}
+   ];
+   var _edges = [];
+   var _faces = [
+        {vertices:[0,1,2,3],  texture:0}
+   ];
+   var _uvs = [];
+   var pt;
+
+   with (obj)
+   {
+      color = [0,0,0];      // colour used for wireframe edges and depthcued rendering mode
+      drawmode = "solid"; // one of "point", "wireframe", "solid"
+      shademode = "plain";    // one of "plain", "depthcue", "lightsource" (solid drawing mode only)
+      scale = 1;
+      init(
+          _points,
+          _edges,
+          _faces,
+          _uvs
+      );
+   }
+   k3d.addK3DObject(obj);
+
+    /////////
+   obj = new K3D.K3DObject();
+    
+   obj.textures.push(bitmaps[0]);  
+    
+   var _points = [];
+   var _edges = [];
+   var _faces = [];
+   var _uvs = [];
+   var pt;
+    
+
+
+    
+    for(i = 0 ; i < fg.gxs.length-1 ; i++) {
+        for(j = 0 ; j < fg.gys.length-1 ; j++) {
+            pt = {x:fg.gxs[i+0], y:fg.gys[j+1], z:0}; uv = {u:(pt.x+gw/2)/gw, v:(pt.y+gh/2)/gh}; _points.push(pt); _uvs.push(uv);
+            pt = {x:fg.gxs[i+1], y:fg.gys[j+1], z:0}; uv = {u:(pt.x+gw/2)/gw, v:(pt.y+gh/2)/gh}; _points.push(pt); _uvs.push(uv);
+            pt = {x:fg.gxs[i+1], y:fg.gys[j+0], z:0}; uv = {u:(pt.x+gw/2)/gw, v:(pt.y+gh/2)/gh}; _points.push(pt); _uvs.push(uv);
+            pt = {x:fg.gxs[i+0], y:fg.gys[j+0], z:0}; uv = {u:(pt.x+gw/2)/gw, v:(pt.y+gh/2)/gh}; _points.push(pt); _uvs.push(uv);
+        
+            ind = (j + i * (fg.gys.length-1)) * 4;
+            fc = {vertices:[ind,ind+1,ind+2,ind+3],  texture:0};
+            _faces.push(fc);
+        }
+    }
+
+   with (obj)
+   {
+      color = [255,0,0];      // colour used for wireframe edges and depthcued rendering mode
+      drawmode = "point"; // one of "point", "wireframe", "solid"
+      shademode = "plain";    // one of "plain", "depthcue", "lightsource" (solid drawing mode only)
+      scale = 1;
+      init(
+          _points,
+          _edges,
+          _faces,
+          _uvs
+      );
+   }
+   k3d.addK3DObject(obj);
+    
+    
+    
+    
+    ////////
+
+}
+
+function initKeyFrame() {
+    var mk = 10;
+    for(k = 0 ; k <= mk ; k++) {
+        
+       var keyFrame = {value:[], time:k * 0.1};
+       keyFrame.value = deepCopyPointArray(obj.points);
+       pt = keyFrame.value[20]; pt.x += -3*k/mk; pt.y += 0;
+       pt = keyFrame.value[27]; pt.x += -3*k/mk; pt.y += 0;
+       pt = keyFrame.value[5]; pt.x += -3*k/mk; pt.y += 0;
+       pt = keyFrame.value[10]; pt.x += -3*k/mk; pt.y += 0;
+        
+       pt = keyFrame.value[37]; pt.x += +3*k/mk; pt.y += 0;
+       pt = keyFrame.value[42]; pt.x += +3*k/mk; pt.y += 0;
+       pt = keyFrame.value[52]; pt.x += +3*k/mk; pt.y += 0;
+       pt = keyFrame.value[59]; pt.x += +3*k/mk; pt.y += 0;
+        
+       //pt = keyFrame.value[37]; pt.x += +3*k/mk; pt.y += 0;
+       //pt = keyFrame.value[42]; pt.x += +3*k/mk; pt.y += 0;
+       //pt = keyFrame.value[28+3]; pt.x += -6*k/mk; pt.y += 0;
+       
+        
+       //pt = keyFrame.value[24]; pt.x += 0; pt.y += -2*k/mk;
+       //pt = keyFrame.value[28+3]; pt.x += 0; pt.y += -2*k/mk;
+       //pt = keyFrame.value[fg.mouth.gys[1] + fg.mouth.gxs[1] * (fg.gys.length-1)]; pt.x += 0; pt.y += -3*k/mk; 
+       //pt = keyFrame.value[fg.mouth.gys[1] + fg.mouth.gxs[2] * (fg.gys.length-1)]; pt.x += 0; pt.y += -4*k/mk;
+       keyFrames.push(keyFrame);
+    }
+    
+}
+
+function deepCopyPointArray(arr) {
+    
+    var ret = [];
+    for(i = 0 ; i < arr.length ; i++) {
+        ret.push({x:arr[i].x, y:arr[i].y, z:arr[i].z});
+    }
+    return ret;
+}//*/
+function deepObjCopy (dupeObj) {
+	var retObj = new Object();
+	if (typeof(dupeObj) == 'object') {
+		if (typeof(dupeObj.length) != 'undefined')
+			var retObj = new Array();
+		for (var objInd in dupeObj) {	
+			if (typeof(dupeObj[objInd]) == 'object') {
+				retObj[objInd] = deepObjCopy(dupeObj[objInd]);
+			} else if (typeof(dupeObj[objInd]) == 'string') {
+				retObj[objInd] = dupeObj[objInd];
+			} else if (typeof(dupeObj[objInd]) == 'number') {
+				retObj[objInd] = dupeObj[objInd];
+			} else if (typeof(dupeObj[objInd]) == 'boolean') {
+				((dupeObj[objInd] == true) ? retObj[objInd] = true : retObj[objInd] = false);
+			}
+		}
+	}
+}
+    
+    
+    
+
+ 
+    
+
+
+
+</script>
+    
+    
+</html>
