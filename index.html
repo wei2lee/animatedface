@@ -26,12 +26,16 @@
     <input type=button value="-">
     <input type=button id=btn_play value="play">
     
+    <br>
+    <input type=button id=btn_debug value="debug">
+    
+    
     <script>
         var app_skybiometry = {
             key: 'b628265034474b57bc2d306faf253dbf',
             secret: '27616ef975b84b2da2c7e4861643dea9'
         };
-        var debug = 0;
+        var debug = 1;
         var bms = [];
         var f = {
             le: {
@@ -40,7 +44,9 @@
                     y: -(44.89 / 100 * 225 - 225 / 2),
                     w: 0,
                     h: 8
-                }
+                },
+                mesh: null,
+                dbmesh: null
             },
             re: {
                 b: {
@@ -48,7 +54,9 @@
                     y: -(44 / 100 * 225 - 225 / 2),
                     w: 0,
                     h: 8
-                }
+                },
+                mesh: null,
+                dbmesh: null
             },
             no: {
                 b: {
@@ -65,7 +73,8 @@
                     w: 40,
                     h: 24
                 },
-                mesh: null
+                mesh: null,
+                dbmesh: null
             },
             fc: {
                 b: {
@@ -73,7 +82,9 @@
                     y: -(54.22 / 100 * 225 - 225 / 2),
                     w: 38.67 / 100 * 225,
                     h: 38.67 / 100 * 225,
-                }
+                },
+                mesh: null,
+                dbmesh: null
             },
             b: {
                 x: 0,
@@ -82,8 +93,8 @@
                 h: 225
             },
             img: {
-                /*src: 'images/man.jpg',*/
-                src: 'images/sadgirl.jpg',
+                src: 'images/man.jpg',
+                //src: 'images/sadgirl.jpg',
                 b: {
                     x: 0,
                     y: 0,
@@ -92,21 +103,34 @@
                 }
             },
             fdr: {
-                /*src: 'facedetect.man.json'*/
-                src: 'facedetect.sadgirl.jpg.json'
+                src: 'facedetect.man.json',
+                //src: 'facedetect.sadgirl.jpg.json'
             }
         };
         
         var camera, scene, renderer;
-        var pose = {
+        var pose_mo = {
           laugh:{mo:{vertices:[]}},
           smile:{mo:{vertices:[]}},
           natural:{mo:{vertices:[]}},
           talk:{mo:{vertices:[]}},
           angry:{mo:{vertices:[]}} 
         };
-        var anim = {
-            pose2 : pose.talk,
+        
+        var pose_eye = {
+            open:{le:{vertices:[]}, re:{vertices:[]}},
+            close:{le:{vertices:[]}, re:{vertices:[]}}
+        };
+        
+        var anim_mo = {
+            pose1 : pose_mo.natural,
+            pose2 : pose_mo.talk,
+            tinc : 0.02,
+            play : true
+        };
+        var anim_eye = {
+            pose1 : pose_eye.open,
+            pose2 : pose_eye.close,
             tinc : 0.02,
             play : true
         };
@@ -153,6 +177,17 @@
                     f.mo.b.y = -(data.photos[0].tags[0].mouth_center.y / 100 * f.b.h - f.b.h / 2);
                     f.mo.b.w = 40 / 87 * f.fc.b.w;
                     f.mo.b.h = 24 / 87 * f.fc.b.w;
+                    
+                    f.le.b.x = data.photos[0].tags[0].eye_left.x / 100 * f.b.w - f.b.w / 2;
+                    f.le.b.y = -(data.photos[0].tags[0].eye_left.y / 100 * f.b.h - f.b.h / 2);
+                    f.le.b.w = 40 / 87 * f.fc.b.w;
+                    f.le.b.h = 24 / 87 * f.fc.b.w;
+                    
+                    f.re.b.x = data.photos[0].tags[0].eye_right.x / 100 * f.b.w - f.b.w / 2;
+                    f.re.b.y = -(data.photos[0].tags[0].eye_right.y / 100 * f.b.h - f.b.h / 2);
+                    f.re.b.w = 40 / 87 * f.fc.b.w;
+                    f.re.b.h = 24 / 87 * f.fc.b.w;
+                    
                     console.log(f);
                     
                     initThreeJS();
@@ -191,14 +226,22 @@
         }
 
         function initThreeJS() {
-            $(':button[value="natural"]').click(function(){ anim.pose2 = pose.natural; });
-            $(':button[value="talk"]').click(function(){ anim.pose2 = pose.talk; });
-            $(':button[value="laugh"]').click(function(){ anim.pose2 = pose.laugh; });
-            $(':button[value="smile"]').click(function(){ anim.pose2 = pose.smile; });
-            $(':button[value="angry"]').click(function(){ anim.pose2 = pose.angry; });
-            $(':button[value="+"]').click(function(){ anim.tinc = clamp(anim.tinc+0.001, 0.001, 5); });
-            $(':button[value="-"]').click(function(){ anim.tinc = clamp(anim.tinc-0.001, 0.001, 5); });
-            $('#btn_play').click(function(){ anim.play = !anim.play; $('#btn_play').val(anim.play ? 'stop' : 'play');  });
+            $(':button[value="natural"]').click(function(){ anim_mo.pose2 = pose_mo.natural; });
+            $(':button[value="talk"]').click(function(){ anim_mo.pose2 = pose_mo.talk; });
+            $(':button[value="laugh"]').click(function(){ anim_mo.pose2 = pose_mo.laugh; });
+            $(':button[value="smile"]').click(function(){ anim_mo.pose2 = pose_mo.smile; });
+            $(':button[value="angry"]').click(function(){ anim_mo.pose2 = pose_mo.angry; });
+            $(':button[value="+"]').click(function(){ anim_mo.tinc = clamp(anim_mo.tinc+0.001, 0.001, 5); });
+            $(':button[value="-"]').click(function(){ anim_mo.tinc = clamp(anim_mo.tinc-0.001, 0.001, 5); });
+            $('#btn_play').click(function(){ anim_mo.play = !anim_mo.play; $('#btn_play').val(anim_mo.play ? 'stop' : 'play');  });
+            $('#btn_debug').click(function(){ 
+                debug = !debug; 
+                if(f.le.dbmesh) f.le.dbmesh.visible=debug;
+                if(f.re.dbmesh) f.re.dbmesh.visible=debug;
+                if(f.mo.dbmesh) f.mo.dbmesh.visible=debug;
+                if(f.fc.dbmesh) f.fc.dbmesh.visible=debug;
+            });
+            
             
             initScene();
             animate();
@@ -243,15 +286,19 @@
             document.body.appendChild(container);
 
             var i, j, k;
-            var mesh_mo;
             var tex = THREE.ImageUtils.loadTexture(f.img.src);
+            
+            var mat_db = new THREE.MeshBasicMaterial({
+                color: 0xff5555,
+                wireframe: true,
+            });
+            
             var mat = new THREE.MeshBasicMaterial({
-                //color: 0xff5555,
-                wireframe: false,
                 map: tex,
                 overdraw: true
             });
-
+            
+                
             var fshp = new THREE.Shape();
             fshp.moveTo(f.b.x - f.b.w / 2, f.b.x - f.b.h / 2);
             fshp.lineTo(f.b.x + f.b.w / 2, f.b.x - f.b.h / 2);
@@ -267,6 +314,44 @@
                 fshpho.lineTo(f.le.b.x - f.le.b.w / 2, f.le.b.y + f.le.b.h / 2);
                 fshpho.lineTo(f.le.b.x - f.le.b.w / 2, f.le.b.y - f.le.b.h / 2);
                 fshp.holes.push(fshpho);
+                
+                var geo = new THREE.Geometry();
+                geo.vertices.push(new THREE.Vector3(f.le.b.x - f.le.b.w / 2, f.le.b.y - f.le.b.h / 2, 0));                
+                geo.vertices.push(new THREE.Vector3(f.le.b.x + f.le.b.w / 2, f.le.b.y - f.le.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x + f.le.b.w / 2, f.le.b.y + f.le.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x - f.le.b.w / 2, f.le.b.y + f.le.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x, f.le.b.y - f.le.b.h / 2 * 0.6, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x + f.le.b.w / 2 * 0.8, f.le.b.y, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x, f.le.b.y + f.le.b.h / 2 * 0.6, 0));
+                geo.vertices.push(new THREE.Vector3(f.le.b.x - f.le.b.w / 2 * 0.8, f.le.b.y, 0));
+                
+                geo.faces.push(new THREE.Face3(0, 4, 7));
+                geo.faces.push(new THREE.Face3(0, 1, 4));
+                geo.faces.push(new THREE.Face3(4, 1, 5));
+                geo.faces.push(new THREE.Face3(5, 1, 2));
+                geo.faces.push(new THREE.Face3(6, 5, 2));
+                geo.faces.push(new THREE.Face3(3, 6, 2));
+                geo.faces.push(new THREE.Face3(3, 7, 6));
+                geo.faces.push(new THREE.Face3(3, 0, 7));
+                geo.faces.push(new THREE.Face4(4, 5, 6, 7));
+                
+                computeFaceVertexUvs(geo);
+                f.le.mesh = new THREE.Mesh(geo, mat);
+                scene.add(f.le.mesh);
+                
+                
+                for(i = 0 ; i < geo.vertices.length ; i++)
+                    pose_eye.open.le.vertices.push(new THREE.Vector3().copy(geo.vertices[i]));
+                
+                for(i = 0 ; i < geo.vertices.length ; i++) {
+                    if(i == 4) {
+                        pose_eye.close.le.vertices.push(new THREE.Vector3(f.le.b.x, f.le.b.y, 0));
+                    } else if(i == 6) {
+                        pose_eye.close.le.vertices.push(new THREE.Vector3(f.le.b.x, f.le.b.y, 0));
+                    } else {
+                        pose_eye.close.le.vertices.push(new THREE.Vector3().copy(geo.vertices[i]));
+                    }
+                }
             }
 
             if (f.re.b.w != 0 && f.re.b.h != 0) {
@@ -277,6 +362,46 @@
                 fshpho.lineTo(f.re.b.x - f.re.b.w / 2, f.re.b.y + f.re.b.h / 2);
                 fshpho.lineTo(f.re.b.x - f.re.b.w / 2, f.re.b.y - f.re.b.h / 2);
                 fshp.holes.push(fshpho);
+                
+
+                var geo = new THREE.Geometry();
+                geo.vertices.push(new THREE.Vector3(f.re.b.x - f.re.b.w / 2, f.re.b.y - f.re.b.h / 2, 0));                
+                geo.vertices.push(new THREE.Vector3(f.re.b.x + f.re.b.w / 2, f.re.b.y - f.re.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x + f.re.b.w / 2, f.re.b.y + f.re.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x - f.re.b.w / 2, f.re.b.y + f.re.b.h / 2, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x, f.re.b.y - f.re.b.h / 2 * 0.6, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x + f.re.b.w / 2 * 0.8, f.re.b.y, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x, f.re.b.y + f.re.b.h / 2 * 0.6, 0));
+                geo.vertices.push(new THREE.Vector3(f.re.b.x - f.re.b.w / 2 * 0.8, f.re.b.y, 0));
+                
+                geo.faces.push(new THREE.Face3(0, 4, 7));
+                geo.faces.push(new THREE.Face3(0, 1, 4));
+                geo.faces.push(new THREE.Face3(4, 1, 5));
+                geo.faces.push(new THREE.Face3(5, 1, 2));
+                geo.faces.push(new THREE.Face3(6, 5, 2));
+                geo.faces.push(new THREE.Face3(3, 6, 2));
+                geo.faces.push(new THREE.Face3(3, 7, 6));
+                geo.faces.push(new THREE.Face3(3, 0, 7));
+                geo.faces.push(new THREE.Face4(4, 5, 6, 7));
+                
+                computeFaceVertexUvs(geo);
+                f.re.mesh = new THREE.Mesh(geo, mat);
+                scene.add(f.re.mesh);
+                
+                
+                for(i = 0 ; i < geo.vertices.length ; i++)
+                    pose_eye.open.re.vertices.push(new THREE.Vector3().copy(geo.vertices[i]));
+                
+                for(i = 0 ; i < geo.vertices.length ; i++) {
+                    if(i == 4) {
+                        pose_eye.close.re.vertices.push(new THREE.Vector3(f.re.b.x, f.re.b.y, 0));
+                    } else if(i == 6) {
+                        pose_eye.close.re.vertices.push(new THREE.Vector3(f.re.b.x, f.re.b.y, 0));
+                    } else {
+                        pose_eye.close.re.vertices.push(new THREE.Vector3().copy(geo.vertices[i]));
+                    }
+                }
+                
             }
 
             if (f.mo.b.w != 0 && f.mo.b.h != 0) {
@@ -288,85 +413,83 @@
                 fshpho.lineTo(f.mo.b.x - f.mo.b.w / 2, f.mo.b.y - f.mo.b.h / 2);
                 fshp.holes.push(fshpho);
 
+                var mo_geo = new THREE.Geometry();
+                var mo_mi = 9;
+                
+                for (i = 0, j = 0 ; i <= mo_mi; i++, j+=4) {
+                    mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y + f.mo.b.h / 2, 0));                
+                    mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - 0, 0));
+    
+                    mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - 0, 0));
+                    mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - f.mo.b.h / 2, 0));
+                    
+                    if(j > 0) {
+                        mo_geo.faces.push(new THREE.Face4(j - 4, j - 3, j + 1, j + 0));
+                        mo_geo.faces.push(new THREE.Face4(j - 2, j - 1, j + 3, j + 2));
+                    }
+                    
+                    pose_mo.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
+                    pose_mo.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 1])); 
+                    pose_mo.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 2])); 
+                    pose_mo.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
+                    
+                    pose_mo.smile.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
+                    a = Math.PI / mo_mi * i;
+                    vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 9 * 1 + f.mo.b.y, 0);
+                    pose_mo.smile.mo.vertices.push(vt); 
+                    pose_mo.smile.mo.vertices.push(new THREE.Vector3().copy(vt)); 
+                    pose_mo.smile.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
+                    
+                    pose_mo.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
+                    pose_mo.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 1])); 
+                    a = Math.PI / mo_mi * i;
+                    vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 4.5 * 1 + f.mo.b.y, 0);
+                    pose_mo.laugh.mo.vertices.push(vt); 
+                    pose_mo.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
+                    
+                    pose_mo.angry.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
+                    a = Math.PI / mo_mi * i;
+                    vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, (-1+Math.sin(a)) * f.mo.b.h / 4 * 1 + f.mo.b.y, 0);
+                    pose_mo.angry.mo.vertices.push(vt); 
+                    pose_mo.angry.mo.vertices.push(new THREE.Vector3().copy(vt)); 
+                    pose_mo.angry.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
+                    
+                    
+                    pose_mo.talk.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
+                    a = Math.PI / mo_mi * i;
+                    vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, +Math.sin(a) * f.mo.b.h / 9 * 1 + f.mo.b.y, 0);
+                    pose_mo.talk.mo.vertices.push(vt); 
+                    vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 5 * 1 + f.mo.b.y, 0);
+                    pose_mo.talk.mo.vertices.push(vt); 
+                    pose_mo.talk.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
+                    
+                }//*/
+                computeFaceVertexUvs(mo_geo);
+                f.mo.mesh = new THREE.Mesh(mo_geo, mat);
+                scene.add(f.mo.mesh);
+                    
+                
             }
 
             var geo = fshp.makeGeometry();
             computeFaceVertexUvs(geo);
-            mesh = new THREE.Mesh(geo, mat);
+            f.fc.mesh = mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
 
-            var mo_mat = new THREE.MeshBasicMaterial({
-                //color: 0xff5555,
-                //wireframe: true,
-                map: tex,
-                overdraw: true
-            });
-            var mo_geo = new THREE.Geometry();
-            var mo_mi = 9;
+    
+           
+            f.le.dbmesh = new THREE.Mesh(f.le.mesh.geometry, mat_db);
+            scene.add(f.le.dbmesh);
+
+            f.re.dbmesh = new THREE.Mesh(f.re.mesh.geometry, mat_db);
+            scene.add(f.re.dbmesh);
+
+            f.fc.dbmesh = new THREE.Mesh(f.fc.mesh.geometry, mat_db); 
+            scene.add(f.fc.dbmesh);
+
+            f.mo.dbmesh = new THREE.Mesh(f.mo.mesh.geometry, mat_db);
+            scene.add(f.mo.dbmesh);
             
-            for (i = 0, j = 0 ; i <= mo_mi; i++, j+=4) {
-                mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y + f.mo.b.h / 2, 0));                
-                mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - 0, 0));
-
-                mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - 0, 0));
-                mo_geo.vertices.push(new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, f.mo.b.y - f.mo.b.h / 2, 0));
-                
-                if(j > 0) {
-                    mo_geo.faces.push(new THREE.Face4(j - 4, j - 3, j + 1, j + 0));
-                    mo_geo.faces.push(new THREE.Face4(j - 2, j - 1, j + 3, j + 2));
-                }
-                
-                pose.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
-                pose.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 1])); 
-                pose.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 2])); 
-                pose.natural.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
-                
-                pose.smile.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
-                a = Math.PI / mo_mi * i;
-                vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 9 * 1 + f.mo.b.y, 0);
-                pose.smile.mo.vertices.push(vt); 
-                pose.smile.mo.vertices.push(new THREE.Vector3().copy(vt)); 
-                pose.smile.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
-                
-                pose.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
-                pose.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 1])); 
-                a = Math.PI / mo_mi * i;
-                vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 4.5 * 1 + f.mo.b.y, 0);
-                pose.laugh.mo.vertices.push(vt); 
-                pose.laugh.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
-                
-                pose.angry.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
-                a = Math.PI / mo_mi * i;
-                vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, (-1+Math.sin(a)) * f.mo.b.h / 4 * 1 + f.mo.b.y, 0);
-                pose.angry.mo.vertices.push(vt); 
-                pose.angry.mo.vertices.push(new THREE.Vector3().copy(vt)); 
-                pose.angry.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
-                
-                
-                pose.talk.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 0])); 
-                a = Math.PI / mo_mi * i;
-                vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, +Math.sin(a) * f.mo.b.h / 9 * 1 + f.mo.b.y, 0);
-                pose.talk.mo.vertices.push(vt); 
-                vt = new THREE.Vector3(f.mo.b.x - f.mo.b.w / 2 + f.mo.b.w / mo_mi * i, -Math.sin(a) * f.mo.b.h / 5 * 1 + f.mo.b.y, 0);
-                pose.talk.mo.vertices.push(vt); 
-                pose.talk.mo.vertices.push(new THREE.Vector3().copy(mo_geo.vertices[j + 3])); 
-                
-            }//*/
-            computeFaceVertexUvs(mo_geo);
-            f.mo.mesh = mesh_mo = new THREE.Mesh(mo_geo, mo_mat);
-            scene.add(mesh_mo);
-
-            if(debug) {
-                var dbmesh_mo = new THREE.Mesh(f.mo.mesh.geometry, 
-                    new THREE.MeshBasicMaterial({
-                    color: 0xff5555,
-                    wireframe: true,
-                    map: null,
-                    overdraw: false
-                    })
-                );
-                scene.add(dbmesh_mo);
-            }
             //*/
             
 
@@ -384,13 +507,33 @@
         
         function clamp(val,min,max) { return val<min?min:(val>max?max:val); };
         
-        function interpolatePose(t, pose1, pose2) {
+
+        
+        function animMo(t, pose1, pose2) {
             t = clamp(t, 0, 1);
             for(i = 0; i < pose1.mo.vertices.length ; i++) {
                 f.mo.mesh.geometry.vertices[i].x = pose1.mo.vertices[i].x + t * (pose2.mo.vertices[i].x - pose1.mo.vertices[i].x);
                 f.mo.mesh.geometry.vertices[i].y = pose1.mo.vertices[i].y + t * (pose2.mo.vertices[i].y - pose1.mo.vertices[i].y);
                 f.mo.mesh.geometry.vertices[i].z = pose1.mo.vertices[i].z + t * (pose2.mo.vertices[i].z - pose1.mo.vertices[i].z);       
             }
+            f.mo.mesh.geometry.verticesNeedUpdate = true;
+        }
+        
+        function animEye(t, pose1, pose2) {
+            t = clamp(t, 0, 1);
+            for(i = 0; i < pose1.le.vertices.length ; i++) {
+                f.le.mesh.geometry.vertices[i].x = pose1.le.vertices[i].x + t * (pose2.le.vertices[i].x - pose1.le.vertices[i].x);
+                f.le.mesh.geometry.vertices[i].y = pose1.le.vertices[i].y + t * (pose2.le.vertices[i].y - pose1.le.vertices[i].y);
+                f.le.mesh.geometry.vertices[i].z = pose1.le.vertices[i].z + t * (pose2.le.vertices[i].z - pose1.le.vertices[i].z);       
+            }
+            f.le.mesh.geometry.verticesNeedUpdate = true;
+            
+            for(i = 0; i < pose1.re.vertices.length ; i++) {
+                f.re.mesh.geometry.vertices[i].x = pose1.re.vertices[i].x + t * (pose2.re.vertices[i].x - pose1.re.vertices[i].x);
+                f.re.mesh.geometry.vertices[i].y = pose1.re.vertices[i].y + t * (pose2.re.vertices[i].y - pose1.re.vertices[i].y);
+                f.re.mesh.geometry.vertices[i].z = pose1.re.vertices[i].z + t * (pose2.re.vertices[i].z - pose1.re.vertices[i].z);       
+            }
+            f.re.mesh.geometry.verticesNeedUpdate = true;
         }
 
         
@@ -399,12 +542,15 @@
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
             
-            if(anim.play) {
-                t += anim.tinc;
-                interpolatePose(t, pose.natural, anim.pose2);
-                
-                f.mo.mesh.geometry.verticesNeedUpdate = true;
-                
+            if(anim_mo.play) {
+                t += anim_mo.tinc;
+                animMo(t, anim_mo.pose1, anim_mo.pose2);
+                if(t >= 1) t -= 1;
+            }
+            
+            if(anim_eye.play) {
+                t += anim_eye.tinc;
+                animEye(t, anim_eye.pose1, anim_eye.pose2);
                 if(t >= 1) t -= 1;
             }
             
