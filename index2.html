@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+    <link href='http://reset5.googlecode.com/hg/reset.min.css' rel='stylesheet' type='text/css'>
+
+    <script src="js/jquery-2.0.0.min.js"></script>
+    <script src="js/jquery.json-2.4.js"></script>
+    <script src="js/sprintf-0.7-beta1.js"></script>
+    <script src="js/threejs/build/three.js"></script>
+    <script src="js/threejsex.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/sprintf.min.js"></script>
+
+    
+	<style>
+		* {
+			font-family: 'Open Sans', sans-serif;
+			font-size: 15px;
+			line-height:17px;
+			
+		}
+		
+		body {
+			margin: 10px;
+		}
+	
+        canvas {
+            border:1px solid #cccccc;
+            margin:5px;
+        }
+        
+        #testcanvas {
+            border:1px solid #ff0000;
+            width:512px;
+            height:512px;
+        }
+		
+		
+		.dialog {
+            background-color:#fbfbfb;
+            position:relative;
+            min-height:150px;
+			padding:4px 2px 2px 6px;
+			width:460px;
+			border:1px solid #cccccc;
+			margin:5px 0 0 0;
+			box-sizing: border-box;
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+            display:none;
+		}
+        
+        #log {
+            min-height:0px;
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+        }
+		
+		#btnnext {
+            position:absolute;
+            bottom:5px;
+            right:5px;
+			float:right;
+			width:100px;
+			height:30px;
+			
+		}
+        
+        #fps_stats {
+            position:absolute;
+            top:5px;
+            right:85px;
+        }
+        
+        
+		
+		.clear {
+			clear:both;
+		}
+		
+
+} 
+    </style>
+    
+	
+	
+    <body id=body></body>
+	
+	<div class=dialog>
+	<div id=instruction></div>
+	<input type=button id=btnnext value=Next>	
+	<div class=clear></div>
+	</div>
+    
+    <div class=dialog>
+        <div id=log></div>
+        <div id=fps_stats></div>
+    </div>
+    
+    
+</html>
+    
+<script>
+	var f = {
+		img: {
+			src:'images/monalisa.jpg',
+			dom:null,
+			b:{x:0, y:0, w:225, h:225}
+		}
+	
+	};
+	
+	var app = {
+		st: null,
+		setSt: function(st) {
+			if(this.st == st) return;
+			this.st = st;
+			
+			if(st == 'landing') {
+
+			}
+		}
+	};
+	var sc, ct, rdr, cmr;
+	var fps;
+	
+    f.img.dom = new Image();
+    f.img.dom.onload = init;    
+    f.img.dom.src = f.img.src;
+    
+    function init() {
+        f.img.tex = THREE.ImageUtils.loadTexture(f.img.src);
+        f.img.b.w = f.img.dom.width;
+        f.img.b.h = f.img.dom.height;
+        
+        cmr = new THREE.OrthographicCamera(-256, +256, +256, -256, -1256, +1256);
+        
+        sc = new THREE.Scene();
+		
+
+        
+		
+        ct = document.createElement('div');
+        ct.style.display = 'inline';
+        document.body.appendChild(ct);
+
+        //rdr = new Renderer2d();
+        rdr = new THREE.CanvasRenderer();
+		//rdr = new THREE.CSS3DRenderer();
+		rdr.sortObjects = false;
+        rdr.sortElements = false;
+        rdr.setSize(512, 512);
+        ct.appendChild(rdr.domElement);
+        rdr.domElement.id = 'mycanvas';
+		
+        fps = new Stats();
+        fps.setMode(0); // 0: fps, 1: ms
+        fps.domElement.style.position = 'absolute';
+        fps.domElement.style.left = '0px';
+        fps.domElement.style.top = '0px';
+        
+        $('#fps_stats')[0].appendChild( fps.domElement );
+		
+		$('body').mousedown(onMouseDown);
+		$('body').mouseup(onMouseUp);
+		$('body').mousemove(onMouseMove);
+        
+        //init2d();        
+        initCSS();
+        
+        animate();
+    }
+    function init2d() {
+		var mh, ge, ma;
+
+        mh = new THREE.Mesh();
+        
+        var i, j, k, mi = 10, mj = 10;
+        ge = new THREE.Geometry();
+        for(i = 0 ; i < mi ; i++) {
+            for(j = 0 ; j < mj ; j++) {
+                k = j + i * mj;
+                vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
+                ge.vertices.push(vt);
+                if(i > 0 && j > 0) {
+                    f4 = new THREE.Face4(k - mj - 1, k - mj, k, k - 1);
+                    ge.faces.push(f4);
+                }
+            }
+        }
+        calFVUVs(ge);
+        //ge = new THREE.PlaneGeometry(f.img.b.w, f.img.b.h);
+        mh.geometry = ge;
+        ge.computeBoundingSphere();
+        
+
+        
+        ma = new THREE.MeshBasicMaterial({map:f.img.tex});
+        //ma = new THREE.MeshBasicMaterial({wireframe:false, color:0xff0000});
+        mh.material = ma;
+        sc.add(mh);
+    }
+    
+    function initCSS() {
+		var mh, ge, ma;
+
+        mh = new THREE.Mesh();
+        
+        var i, j, k, mi = 10, mj = 10;
+        ge = new THREE.Geometry();
+        for(i = 0 ; i < mi ; i++) {
+            for(j = 0 ; j < mj ; j++) {
+                k = j + i * mj;
+                vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
+                ge.vertices.push(vt);
+                if(i > 0 && j > 0) {
+                    f4 = new THREE.Face4(k - mj - 1, k - mj, k, k - 1);
+                    ge.faces.push(f4);
+                }
+            }
+        }
+        calFVUVs(ge);
+        //ge = new THREE.PlaneGeometry(f.img.b.w, f.img.b.h);
+        mh.geometry = ge;
+        ge.computeBoundingSphere();
+        
+
+        
+        ma = new THREE.MeshBasicMaterial({map:f.img.tex});
+        //ma = new THREE.MeshBasicMaterial({wireframe:false, color:0xff0000});
+        mh.material = ma;
+       
+        f4 = ge.faces[0];
+        
+        var v0 = ge.vertices[f4.a];
+        var v1 = ge.vertices[f4.b];
+        var v2 = ge.vertices[f4.c];
+        var v3 = ge.vertices[f4.d];
+        
+        var uv0 = ge.faceVertexUvs[0][0][0];
+        var uv1 = ge.faceVertexUvs[0][0][1];
+        var uv2 = ge.faceVertexUvs[0][0][2];
+        var uv3 = ge.faceVertexUvs[0][0][3];
+        
+        
+        var ctx = $('#mycanvas')[0].getContext('2d');
+        drawTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, ctx);
+        clipImage(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y, f.img.dom, ctx);
+        
+    }
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        //update();
+		render();
+        fps.update();
+    }
+
+	function render() {
+        rdr.render(sc, cmr);
+	}
+    
+	var cmrangle = {c:-Math.PI, t:-Math.PI, k:0.08};
+	var ctime = 0;
+	var ltime = 0;
+	var el = 0;
+	
+	function update() {
+		if(ltime == 0) el = 0;
+		else { ctime = new Date().time; el = ctime - ltime; }
+		ltime = ctime;
+	
+        cmrangle.c = cmrangle.c + (cmrangle.t - cmrangle.c) * cmrangle.k;
+		cmr.position.x = Math.cos( cmrangle.c ) * 512;
+		cmr.position.z = Math.sin( cmrangle.c ) * 512;
+		cmr.lookAt( sc.position );
+	}
+	function render() {
+        rdr.render(sc, cmr);
+	}
+	
+	var currm = new THREE.Vector3();
+	var lastm = new THREE.Vector3();
+	
+    var cvs;
+    var cvsw;
+    var cvsh;
+    var ftw;
+    var fth;
+    var j2tp = new THREE.Vector3();
+    function j2t(jx, jy) {
+        if(cvs == null) {
+            cvs = $('#mycanvas');
+            cvsw = cvs.width();
+            cvsh = cvs.height();
+            ftw = 512;
+            fth = 512;                
+        }
+        j2tp.x = (jx - cvs[0].offsetLeft - cvsw/2) * ftw / cvsw;
+        j2tp.y = -(jy - cvs[0].offsetTop - cvsh/2) * fth / cvsh;
+        return j2tp;
+    }
+	
+	var md = 0;
+	function onMouseDown(evt) {
+        j2t(event.pageX, event.pageY);
+        lastm.copy(currm);
+		currm.copy(j2tp);
+		
+		md = 1;
+	}
+	
+	function onMouseUp(evt) {
+        j2t(event.pageX, event.pageY);
+        lastm.copy(currm);
+		currm.copy(j2tp);
+		
+		md = 0;
+	}
+	
+	function onMouseMove(evt) {
+        j2t(event.pageX, event.pageY);
+        lastm.copy(currm);
+		currm.copy(j2tp);
+		
+		if(md) {
+			cmrangle.t += (currm.x - lastm.x) / 200;
+		}
+	}
+	
+</script>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <script src="js/jquery-2.0.0.min.js"></script>
+    <script src="js/jquery.json-2.4.js"></script>
+    <script src="js/sprintf-0.7-beta1.js"></script>
+    <script src="js/threejs/build/three.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/sprintf.min.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Noto+Serif' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+    <script src="js/three.js-master/examples/js/renderers/CSS3DRenderer.js"></script>
+    <link href='http://reset5.googlecode.com/hg/reset.min.css' rel='stylesheet' type='text/css'>
+	<style>
+		* {
+			font-family: 'Open Sans', sans-serif;
+			font-size: 15px;
+			line-height:17px;
+			
+		}
+		
+		body {
+			margin: 10px;
+		}
+	
+        canvas {
+            border:1px solid #cccccc;
+            margin:5px 0 0 0;
+            
+        }
+		
+		
+		.dialog {
+            background-color:#fbfbfb;
+            position:relative;
+            min-height:150px;
+			padding:4px 2px 2px 6px;
+			width:460px;
+			border:1px solid #cccccc;
+			margin:5px 0 0 0;
+			box-sizing: border-box;
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+		}
+        
+        #log {
+            min-height:0px;
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+        }
+		
+		#btnnext {
+            position:absolute;
+            bottom:5px;
+            right:5px;
+			float:right;
+			width:100px;
+			height:30px;
+			
+		}
+        
+        #fps_stats {
+            position:absolute;
+            top:5px;
+            right:85px;
+        }
+        
+        
+		
+		.clear {
+			clear:both;
+		}
+		
+
+} 
+    </style>
+    
+	
+	
+    <body id=body></body>
+	
+	<div class=dialog>
+	<div id=instruction></div>
+	<input type=button id=btnnext value=Next>	
+	<div class=clear></div>
+	</div>
+    
+    <div class=dialog>
+        <div id=log></div>
+        <div id=fps_stats></div>
+    </div>
+    
+    <canvas id="myCanvas" width="460" height="460"></canvas>
+
+    
+</html>
+    
+<script>
+    function rand() {
+        return Math.random();   
+    }
+    
+    var img = new Image();
+    img.onload = init;    
+    img.src = 'images/man.jpg';
+    
+    
+    function init() {
+        
+        fpsstats = new Stats();
+        fpsstats.setMode(0); // 0: fps, 1: ms
+        fpsstats.domElement.style.position = 'absolute';
+        fpsstats.domElement.style.left = '0px';
+        fpsstats.domElement.style.top = '0px';
+        
+        $('#fps_stats')[0].appendChild( fpsstats.domElement );
+        
+        animate();
+    }
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        //fpsstats.begin();
+        
+        
+        var c=document.getElementById("myCanvas");
+        var ctx=c.getContext("2d");
+        ctx.clearRect ( 0 , 0 , c.width , c.height );
+        
+        for(i = 0 ; i < 100 ; i++) {        
+            var m11 = rand() + .1;
+            var m12 = rand() + .1;
+            var m21 = rand() + .1;
+            var m22 = rand() + .1;
+            var dx = 0;
+            var dy = 0;
+            
+			var v1x = rand()*225-225/2; var vly=rand()*225-225/2;
+			var v2x = rand()*225-225/2; var v2y=rand()*225-225/2;
+			var v3x = rand()*225-225/2; var v3y=rand()*225-225/2;
+			
+			
+		   ctx.save();
+		   ctx.beginPath();
+		   ctx.moveTo(v1x, vly);
+		   ctx.lineTo(v2x, v2y);
+		   ctx.lineTo(v3x, v3y);
+		   ctx.closePath();
+		   ctx.clip();
+		   //*/
+            ctx.setTransform(m11, m12, m21, m22, dx, dy);
+            ctx.drawImage(img,10,10);
+            
+			ctx.restore();
+            
+        }
+        //fpsstats.end();
+        fpsstats.update();
+    }
+</script>
