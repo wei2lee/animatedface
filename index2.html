@@ -100,7 +100,7 @@
         <div id=fps_stats></div>
     </div>
     
-    
+    <canvas id=csscanvas width=512 height=512></canvas>
 </html>
     
 <script>
@@ -139,17 +139,11 @@
         cmr = new THREE.OrthographicCamera(-256, +256, +256, -256, -1256, +1256);
         
         sc = new THREE.Scene();
-		
-
-        
-		
         ct = document.createElement('div');
         ct.style.display = 'inline';
         document.body.appendChild(ct);
 
-        //rdr = new Renderer2d();
         rdr = new THREE.CanvasRenderer();
-		//rdr = new THREE.CSS3DRenderer();
 		rdr.sortObjects = false;
         rdr.sortElements = false;
         rdr.setSize(512, 512);
@@ -168,7 +162,7 @@
 		$('body').mouseup(onMouseUp);
 		$('body').mousemove(onMouseMove);
         
-        //init2d();        
+        init2d();        
         initCSS();
         
         animate();
@@ -209,7 +203,7 @@
 
         mh = new THREE.Mesh();
         
-        var i, j, k, mi = 10, mj = 10;
+        var i, j, k, mi = 2, mj = 2;
         ge = new THREE.Geometry();
         for(i = 0 ; i < mi ; i++) {
             for(j = 0 ; j < mj ; j++) {
@@ -232,23 +226,60 @@
         ma = new THREE.MeshBasicMaterial({map:f.img.tex});
         //ma = new THREE.MeshBasicMaterial({wireframe:false, color:0xff0000});
         mh.material = ma;
-       
-        f4 = ge.faces[0];
+        //sc.add(mh);
         
-        var v0 = ge.vertices[f4.a];
-        var v1 = ge.vertices[f4.b];
-        var v2 = ge.vertices[f4.c];
-        var v3 = ge.vertices[f4.d];
+        var cvs = $('#csscanvas');
+        var ctx = $('#csscanvas')[0].getContext('2d');
         
-        var uv0 = ge.faceVertexUvs[0][0][0];
-        var uv1 = ge.faceVertexUvs[0][0][1];
-        var uv2 = ge.faceVertexUvs[0][0][2];
-        var uv3 = ge.faceVertexUvs[0][0][3];
-        
-        
-        var ctx = $('#mycanvas')[0].getContext('2d');
-        drawTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, ctx);
-        clipImage(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y, f.img.dom, ctx);
+        var v0 = new THREE.Vector3();
+        var v1 = new THREE.Vector3();
+        var v2 = new THREE.Vector3();
+        var v3 = new THREE.Vector3();
+        var uv0 = new THREE.Vector2();
+        var uv1 = new THREE.Vector2();
+        var uv2 = new THREE.Vector2();
+        var uv3 = new THREE.Vector2();
+        for(i = 0 ; i < ge.faces.length ; i++) {
+            f4 = ge.faces[i];
+            v0.copy(ge.vertices[f4.a]);
+            v1.copy(ge.vertices[f4.b]);
+            v2.copy(ge.vertices[f4.c]);
+            v3.copy(ge.vertices[f4.d]);
+            
+            //convert to screen coord
+            v0.x += 512/2; v0.y = -v0.y+512/2;
+            v1.x += 512/2; v1.y = -v1.y+512/2;
+            v2.x += 512/2; v2.y = -v2.y+512/2;
+            v3.x += 512/2; v3.y = -v3.y+512/2;
+            
+            uv0.copy(ge.faceVertexUvs[0][i][0]);
+            uv1.copy(ge.faceVertexUvs[0][i][1]);
+            uv2.copy(ge.faceVertexUvs[0][i][2]);
+            uv3.copy(ge.faceVertexUvs[0][i][3]);
+            
+            //convert to screen coord
+            uv0.y = 1 - uv0.y;
+            uv1.y = 1 - uv1.y;
+            uv2.y = 1 - uv2.y;
+            uv3.y = 1 - uv3.y;
+            
+            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+            drawTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, ctx);
+            clipImage(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y, f.img.dom, ctx);
+            var mhimg = new Image();
+            mhimg.src = cvs[0].toDataURL();
+            cvs[0].appendChild(mhimg);
+            
+            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+            drawTriangle(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, ctx);
+            clipImage(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, uv2.x, uv2.y, uv3.x, uv3.y, uv0.x, uv0.y, f.img.dom, ctx);
+            var mhimg = new Image();
+            mhimg.src = cvs[0].toDataURL();
+            
+            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+            
+            cvs[0].appendChild(mhimg);
+        }
         
     }
     
