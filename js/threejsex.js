@@ -1,9 +1,5 @@
-THREE.Vector3.prototype.o = {
-    x: 0,
-    y: 0,
-    z: 0,
-    d: 0
-};
+var THREEEX = THREEEX || {  };
+
 
 THREE.Face3.prototype.set = function(a,b,c) {
     this.a=a;
@@ -25,18 +21,6 @@ THREE.Object3D.prototype.hitTestRect = function(lb, up) {
 THREE.Object3D.prototype.hitTest = function(p) {
     return false;   
 }
-
-
-
-
-
-var Renderer2d = function(param){
-    THREE.CanvasRenderer.call(this, param);
-};
-Renderer2d.prototype = Object.create( THREE.CanvasRenderer.prototype );
-
-
-
 
 function drawTriangle( x0, y0, x1, y1, x2, y2, _context  ) {
 
@@ -84,8 +68,87 @@ function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image, _cont
     _context.restore();
 
 }
+
+var ctv0 = new THREE.Vector3();    
+var ctv1 = new THREE.Vector3();    
+var ctv2 = new THREE.Vector3();    
+
+var ctuv0 = new THREE.Vector2();
+var ctuv1 = new THREE.Vector2();
+var ctuv2 = new THREE.Vector2();
+
+var ctlb = new THREE.Vector2();
+var ctub = new THREE.Vector2();
+
+var pj = new THREE.Projector();
+function projectWorld2Cvs(vt, rdr, cmr) {
+    pj.projectVector(vt, cmr);
+    vt.x = (vt.x / 2 + 0.5) * rdr.domElement.width;
+    vt.y = (vt.y / -2 + 0.5) * rdr.domElement.height;
+    return vt;
+}
+
+function projectCvs2World(vt, rdr, cmr) {
+    vt.x = (vt.x / rdr.domElement.width - 0.5) * 2;
+    vt.y = (vt.y / rdr.domElement.height - 0.5) * 2;
+    pj.unprojectVector(vt, cmr);
+    return vt;
+}
+
+function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, tex, rdr, cmr) {
     
     
+    ctv0.copy(v0);
+    projectWorld2Cvs(ctv0, rdr, cmr);
+    
+    ctv1.copy(v1);
+    projectWorld2Cvs(ctv1, rdr, cmr);
+    
+    ctv2.copy(v2);
+    projectWorld2Cvs(ctv2, rdr, cmr);
+    
+    ctuv0.copy(uv0);
+    ctuv0.y = 1 - ctuv0.y;
+    
+    ctuv1.copy(uv1);
+    ctuv1.y = 1 - ctuv1.y;
+
+    ctuv2.copy(uv2);
+    ctuv2.y = 1 - ctuv2.y;
+    
+    var img = new Image();
+    var cvs = document.createElement('canvas');
+    var ctx = cvs.getContext('2d');
+    
+    ctlb.x = Math.min(ctv0.x, ctv1.x, ctv2.x);
+    ctlb.y = Math.min(ctv0.y, ctv1.y, ctv2.y);
+    ctub.x = Math.max(ctv0.x, ctv1.x, ctv2.x);
+    ctub.y = Math.max(ctv0.y, ctv1.y, ctv2.y);
+
+    cvs.width = ctub.x - ctlb.x;
+    cvs.height = ctub.y - ctlb.y;
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    
+    ctv0.x -= ctlb.x;
+    ctv0.y -= ctlb.y;
+    ctv1.x -= ctlb.x;
+    ctv1.y -= ctlb.y;
+    ctv2.x -= ctlb.x;
+    ctv2.y -= ctlb.y;        
+    drawTriangle(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctx);
+    clipImage(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctuv0.x, ctuv0.y, ctuv1.x, ctuv1.y, ctuv2.x, ctuv2.y, tex, ctx);
+    img.src = cvs.toDataURL();
+    
+    
+    ctuv0.set(ctv0.x / cvs.width, ctv0.y / cvs.height);
+    ctuv1.set(ctv1.x / cvs.width, ctv1.y / cvs.height);
+    ctuv2.set(ctv2.x / cvs.width, ctv2.y / cvs.height);
+    
+    
+    return {imgdom:img, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
+}
+
+
 
 
 function rand() { return Math.random(); }
@@ -120,3 +183,5 @@ function calFVUVs(geo) {
         }
     }
 }
+
+

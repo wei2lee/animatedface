@@ -7,6 +7,7 @@
     <script src="js/sprintf-0.7-beta1.js"></script>
     <script src="js/threejs/build/three.js"></script>
     <script src="js/threejsex.js"></script>
+    <script src="js/CanvasRenderer.js"></script>
     <script src="js/Stats.js"></script>
     <script src="js/sprintf.min.js"></script>
 
@@ -29,10 +30,10 @@
             position:relative;
             min-height:150px;
 			padding:4px 2px 2px 6px;
-			width:460px;
+			
 			border:1px solid #cccccc;
-			margin:5px 0 0 0;
-			box-sizing: border-box;
+			margin:5px;
+			
 			-moz-user-select: none; 
 			-khtml-user-select: none; 
 			-webkit-user-select: none; 
@@ -66,7 +67,7 @@
 			display:inline-block;
 			width:512px;
 			height:512px;
-			border:1px solid #ff0000;
+			border:1px solid #cccccc;
 		}
         
         #fps_stats {
@@ -97,7 +98,6 @@
     
     <div class=dialog id=dlg2>
         <div id=log></div>
-        <div id=fps_stats></div>
     </div>
 </html>
     
@@ -111,19 +111,8 @@
 	
 	};
 	
-	var app = {
-		st: null,
-		setSt: function(st) {
-			if(this.st == st) return;
-			this.st = st;
-			
-			if(st == 'landing') {
-
-			}
-		}
-	};
 	var sc, ct, rdr, cmr;
-	var nsmx4;
+    var mh, ge, ma;
 	var fps;
 	
     f.img.dom = new Image();
@@ -132,8 +121,8 @@
     
     function init() {
         f.img.tex = THREE.ImageUtils.loadTexture(f.img.src);
-        f.img.b.w = f.img.dom.width;
-        f.img.b.h = f.img.dom.height;
+        f.img.b.w = f.img.dom.width*2;
+        f.img.b.h = f.img.dom.height*2;
         
         cmr = new THREE.OrthographicCamera(-256, +256, +256, -256, -1256, +1256);
         
@@ -143,211 +132,97 @@
 		ct.className  = 'ct';
         document.body.appendChild(ct);
 
+        
         rdr = new THREE.CanvasRenderer();
-		rdr.sortObjects = false;
+        rdr.sortObjects = false;
         rdr.sortElements = false;
         rdr.setSize(512, 512);
-        ct.appendChild(rdr.domElement);
         rdr.domElement.id = 'mycanvas';
+        ct.appendChild(rdr.domElement);
+        
 		
 		
         fps = new Stats();
         fps.setMode(0); // 0: fps, 1: ms
         fps.domElement.style.position = 'absolute';
-        fps.domElement.style.left = '0px';
-        fps.domElement.style.top = '0px';
-        
-        $('#fps_stats')[0].appendChild( fps.domElement );
+        fps.domElement.style.right = '2px';
+        fps.domElement.style.bottom = '2px';
+        $('#dlg2')[0].appendChild( fps.domElement );
 		
 		$('body').mousedown(onMouseDown);
 		$('body').mouseup(onMouseUp);
 		$('body').mousemove(onMouseMove);
         
-		
-        //init2d();        
-        //initCSS();
-        //testTriangle();
-        testPretexture();
-
-		
-		var pj = new THREE.Projector();
-		var pjvt = pj.projectVector(new THREE.Vector3(256,128,0), cmr);
-        
-        pjvt.x = (pjvt.x / 2 + 0.5) * rdr.domElement.width;
-        pjvt.y = (pjvt.y / -2 + 0.5) * rdr.domElement.height;
-		
-        
-		var upjvt = pj.unprojectVector(new THREE.Vector3(2, 0, 0), cmr);
-		console.log(upjvt);
+        initScene();
         animate();
     }
-    function init2d() {
-		var mh, ge, ma;
-
+    function initScene() {
         mh = new THREE.Mesh();
-        
-        var i, j, k, mi = 10, mj = 10;
-        ge = new THREE.Geometry();
-        for(i = 0 ; i < mi ; i++) {
-            for(j = 0 ; j < mj ; j++) {
-                k = j + i * mj;
-                vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
-                ge.vertices.push(vt);
-                if(i > 0 && j > 0) {
-                    f4 = new THREE.Face4(k - mj - 1, k - mj, k, k - 1);
-                    ge.faces.push(f4);
-                }
-            }
-        }
-        calFVUVs(ge);
-        //ge = new THREE.PlaneGeometry(f.img.b.w, f.img.b.h);
-        mh.geometry = ge;
-        ge.computeBoundingSphere();
-        
-
-        
-        ma = new THREE.MeshBasicMaterial({map:f.img.tex});
-        //ma = new THREE.MeshBasicMaterial({wireframe:false, color:0xff0000});
-        mh.material = ma;
-        sc.add(mh);
-    }
-
-
-    function testPretexture() {
-		var mh, ge, ma;
-
-
-        mh = new THREE.Mesh();
-        
         ma = new THREE.MeshFaceMaterial();
         ge = new THREE.Geometry();
-        var i, j, k, mi = 2, mj = 2;
-        var mai = 0;
+        var i, j, k, mi = 7, mj = 7;
+        ge.mi = mi; ge.mj = mj;
         var data;
         for(i = 0 ; i < mi ; i++) {
             for(j = 0 ; j < mj ; j++) {
                 k = j + i * mj;
                 vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
+                vt.o = {};
+                vt.o.x = vt.x;
+                vt.o.y = vt.y;
+                vt.o.z = vt.z;
                 ge.vertices.push(vt);
                 if(i > 0 && j > 0) {
-                    f31 = new THREE.Face3(k - mj - 1, k - mj, k);
-                    f32 = new THREE.Face3(k, k - 1, k - mj - 1);
+                    var f31 = new THREE.Face3(k - mj - 1, k - mj, k);
+                    var  f32 = new THREE.Face3(k, k - 1, k - mj - 1);
                     var v0 = ge.vertices[f31.a];
                     var v1 = ge.vertices[f31.b];
                     var v2 = ge.vertices[f31.c];
                     var v3 = ge.vertices[f32.b];
-                    var uv0 = new THREE.Vector2(ge.vertices[f31.a].x/f.img.b.w+0.5, ge.vertices[f31.a].y/f.img.b.h+0.5);
-                    var uv1 = new THREE.Vector2(ge.vertices[f31.b].x/f.img.b.w+0.5, ge.vertices[f31.b].y/f.img.b.h+0.5);
-                    var uv2 = new THREE.Vector2(ge.vertices[f31.c].x/f.img.b.w+0.5, ge.vertices[f31.c].y/f.img.b.h+0.5);
-                    var uv3 = new THREE.Vector2(ge.vertices[f32.b].x/f.img.b.w+0.5, ge.vertices[f32.b].y/f.img.b.h+0.5);
-                    data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, f.img.dom);
-                    ma.materials.push(new THREE.MeshBasicMaterial({map:new THREE.Texture(data.imgdom)}));
-                    
-                    
+                    var uv0 = new THREE.Vector2(v0.x/f.img.b.w+0.5, v0.y/f.img.b.h+0.5);
+                    var uv1 = new THREE.Vector2(v1.x/f.img.b.w+0.5, v1.y/f.img.b.h+0.5);
+                    var uv2 = new THREE.Vector2(v2.x/f.img.b.w+0.5, v2.y/f.img.b.h+0.5);
+                    var uv3 = new THREE.Vector2(v3.x/f.img.b.w+0.5, v3.y/f.img.b.h+0.5);
+
+                    data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, f.img.dom, rdr, cmr);
+                    var tex = new THREE.Texture(data.imgdom); tex.needsUpdate = true;
+                    ma.materials.push(new THREE.MeshBasicMaterial({map:tex, overdraw:false}));
                     f31.materialIndex = ma.materials.length - 1;
                     ge.faces.push(f31);
                     ge.faceVertexUvs[0].push([data.uv0, data.uv1, data.uv2]);
                     
-                    //data = createTriangleTextureData(v2, v3, v0, uv2, uv3, uv0, f.img.dom);
-                    //ma.materials.push(new THREE.MeshBasicMaterial({map:new THREE.Texture(data.imgdom)}));
-                    //f32.materialIndex = ma.materials.length - 1;
-                    //ge.faces.push(f32);
-                    //ge.faceVertexUvs[0].push([data.uv0, data.uv1, data.uv2]);
+                    data = createTriangleTextureData(v2, v3, v0, uv2, uv3, uv0, f.img.dom, rdr, cmr);
+                    tex = new THREE.Texture(data.imgdom); tex.needsUpdate = true;
+                    ma.materials.push(new THREE.MeshBasicMaterial({map:tex, overdraw:false}));
+                    f32.materialIndex = ma.materials.length - 1;
+                    ge.faces.push(f32);
+                    ge.faceVertexUvs[0].push([data.uv0, data.uv1, data.uv2]);
                     
                 }
             }
-        }//*/
-        //ge = new THREE.PlaneGeometry(200, 300);
-        //ma = new THREE.MeshBasicMaterial({map:f.img.tex});
-        ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(data.imgdom)});
-        
-        //ma = new THREE.MeshBasicMaterial({color:0xff0000, wireframe:true});
-        //calFVUVs(ge);
+        }
         mh.material = ma;
         mh.geometry = ge;
         ge.computeBoundingSphere();
         sc.add(mh);
-        
-    }
 
-
-    var ctv0 = new THREE.Vector3();    
-    var ctv1 = new THREE.Vector3();    
-    var ctv2 = new THREE.Vector3();    
-    
-    var ctuv0 = new THREE.Vector2();
-    var ctuv1 = new THREE.Vector2();
-    var ctuv2 = new THREE.Vector2();
-    
-    var ctlb = new THREE.Vector2();
-    var ctub = new THREE.Vector2();
-    
-    var pj = new THREE.Projector();
-    function projectCanvas(vt) {
-        pj.projectVector(vt, cmr);
-        vt.x = (vt.x / 2 + 0.5) * rdr.domElement.width;
-        vt.y = (vt.y / -2 + 0.5) * rdr.domElement.height;
-        return vt;
     }
     
-    function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, tex) {
+    function createTriangleTextureMesh(mesh) {
+        var mh = new THREE.Mesh();
+        var ge = new THREE.Geometry();
+        var ma = new THREE.FaceMeshMaterial();
         
+        if(mesh.material == null || !(mesh.mateirla instanceof THREE.MeshBasicMaterial)) {
+            return;
+        }
         
-        ctv0.copy(v0);
-        projectCanvas(ctv0);
-        
-        ctv1.copy(v1);
-        projectCanvas(ctv1);
-        
-        ctv2.copy(v2);
-        projectCanvas(ctv2);
-        
-        ctuv0.copy(uv0);
-        ctuv0.y = 1 - ctuv0.y;
-        
-        ctuv1.copy(uv1);
-        ctuv1.y = 1 - ctuv1.y;
-
-        ctuv2.copy(uv2);
-        ctuv2.y = 1 - ctuv2.y;
-        
-        var img = new Image();
-        var cvs = document.createElement('canvas');
-        var ctx = cvs.getContext('2d');
-        
-        ctlb.x = Math.min(ctv0.x, ctv1.x, ctv2.x);
-        ctlb.y = Math.min(ctv0.y, ctv1.y, ctv2.y);
-        ctub.x = Math.max(ctv0.x, ctv1.x, ctv2.x);
-        ctub.y = Math.max(ctv0.y, ctv1.y, ctv2.y);
-
-        cvs.width = ctub.x - ctlb.x;
-        cvs.height = ctub.y - ctlb.y;
-        ctx.clearRect(0, 0, cvs.width, cvs.height);
-        
-        ctv0.x -= ctlb.x;
-        ctv0.y -= ctlb.y;
-        ctv1.x -= ctlb.x;
-        ctv1.y -= ctlb.y;
-        ctv2.x -= ctlb.x;
-        ctv2.y -= ctlb.y;        
-        drawTriangle(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctx);
-        clipImage(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctuv0.x, ctuv0.y, ctuv1.x, ctuv1.y, ctuv2.x, ctuv2.y, tex, ctx);
-        img.src = cvs.toDataURL();
-        
-        $('body')[0].appendChild(img);
-        
-        ctuv0.set(ctv0.x / cvs.width, 1 - ctv0.y / cvs.height);
-        ctuv1.set(ctv1.x / cvs.width, 1 - ctv1.y / cvs.height);
-        ctuv2.set(ctv2.x / cvs.width, 1 - ctv2.y / cvs.height);
-        
-        
-        return {imgdom:img, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
     }
     
-
+    
     function animate() {
         requestAnimationFrame(animate);
-        //update();
+        update();
 		render();
         fps.update();
     }
@@ -356,69 +231,79 @@
         rdr.render(sc, cmr);
 	}
     
-	var cmrangle = {c:-Math.PI, t:-Math.PI, k:0.08};
+	var cmrangle = {c:Math.PI/2, t:Math.PI/2, k:0.08};
 	var ctime = 0;
 	var ltime = 0;
 	var el = 0;
 	
 	function update() {
-		if(ltime == 0) el = 0;
-		else { ctime = new Date().time; el = ctime - ltime; }
+		if(ltime == 0){ ctime = new Date().getTime();  el = 0; }
+		else { ctime = new Date().getTime(); el = ctime - ltime; }
 		ltime = ctime;
 	
         cmrangle.c = cmrangle.c + (cmrangle.t - cmrangle.c) * cmrangle.k;
 		cmr.position.x = Math.cos( cmrangle.c ) * 512;
 		cmr.position.z = Math.sin( cmrangle.c ) * 512;
 		cmr.lookAt( sc.position );
+      //*/  
+        
+        var i, j, k, mi = ge.mi, mj = ge.mj;
+        for(i = 0 ; i < mi ; i++) {
+            for(j = 0 ; j < mj ; j++) {
+                k = j + i * mj;
+                vt = ge.vertices[k];
+                
+                a = Math.PI * 2 / (mi - 1) * i;
+                d = Math.sin(a + ctime / 500) * 20;
+                
+                vt.x = vt.o.x + d;
+            }
+        }
+        //mh.rotation.z += el / -1500;
+        
+        var msg1 = ge ? sprintf('Animated Mesh with Texture in Canvas2D: vertices:%d, faces:%d', ge.vertices.length, ge.faces.length) : '';
+        var msg2 = mov ? sprintf('(%.1f, %.1f)', currm.x, currm.y) : '';
+        $('#log').html(msg1 + '<br>' + msg2);
 	}
 	function render() {
         rdr.render(sc, cmr);
 	}
+    
+    function projectCvs2World2(vt, rdr, cmr) {
+        vt.x = (vt.x / rdr.domElement.width - 0.5) * (cmr.right - cmr.left);
+        vt.y = -(vt.y / rdr.domElement.height - 0.5) * (cmr.top - cmr.bottom);
+        return vt;
+    }
 	
 	var currm = new THREE.Vector3();
 	var lastm = new THREE.Vector3();
-	
-    var cvs;
-    var ftw;
-    var fth;
-    var j2tp = new THREE.Vector3();
-    function j2t(jx, jy) {
-        if(cvs == null) {
-            cvs = $('#mycanvas');
-            cvsw = rdr.domElement.width;
-            cvsh = rdr.domElement.height;  
-            ftw = cmr.right - cmr.left;
-            fth = cmr.top - cmr.bottom;                
-        }
-        j2tp.x = (jx - cvs[0].offsetLeft - cvsw/2) * ftw / cvsw;
-        j2tp.y = -(jy - cvs[0].offsetTop - cvsh/2) * fth / cvsh;
-        return j2tp;
-    }
-	
+    var pjvt = new THREE.Vector3();
 	var md = 0;
+    var mov = 0;
 	function onMouseDown(evt) {
-        j2t(event.pageX, event.pageY);
+        
+        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
         lastm.copy(currm);
-		currm.copy(j2tp);
-		
-		md = 1;
+		currm.copy(pjvt);
+        
+        if(inrng(evt.pageX-rdr.domElement.offsetLeft, 0, rdr.domElement.width) && inrng(evt.pageY-rdr.domElement.offsetTop, 0, rdr.domElement.height))
+		  md = 1;
 	}
 	
 	function onMouseUp(evt) {
-        j2t(event.pageX, event.pageY);
+        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
         lastm.copy(currm);
-		currm.copy(j2tp);
-		
+		currm.copy(pjvt);
 		md = 0;
 	}
 	
 	function onMouseMove(evt) {
-        j2t(event.pageX, event.pageY);
+        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
         lastm.copy(currm);
-		currm.copy(j2tp);
-		if(md) {
-			cmrangle.t += (currm.x - lastm.x) / 200;
-		}
+		currm.copy(pjvt);
+		if(md) cmrangle.t += (currm.x - lastm.x) / -200;
+        
+        mov = inrng(evt.pageX-rdr.domElement.offsetLeft, 0, rdr.domElement.width) && inrng(evt.pageY-rdr.domElement.offsetTop, 0, rdr.domElement.height);
 	}
 	
 </script>
