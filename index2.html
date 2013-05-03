@@ -23,18 +23,6 @@
 			margin: 10px;
 		}
 	
-        canvas {
-            border:1px solid #cccccc;
-            margin:5px;
-        }
-        
-        #testcanvas {
-            border:1px solid #ff0000;
-            width:512px;
-            height:512px;
-        }
-		
-		
 		.dialog {
             background-color:#fbfbfb;
             position:relative;
@@ -49,6 +37,9 @@
 			-webkit-user-select: none; 
 			-o-user-select: none; 
             display:none;
+		}
+		#dlg2 {
+			display:block;
 		}
         
         #log {
@@ -67,6 +58,14 @@
 			width:100px;
 			height:30px;
 			
+		}
+		
+		.ct {
+			margin:5px; 
+			display:inline-block;
+			width:512px;
+			height:512px;
+			border:1px solid #ff0000;
 		}
         
         #fps_stats {
@@ -89,18 +88,19 @@
 	
     <body id=body></body>
 	
-	<div class=dialog>
+	<div class=dialog id=dlg1>
 	<div id=instruction></div>
 	<input type=button id=btnnext value=Next>	
 	<div class=clear></div>
 	</div>
     
-    <div class=dialog>
+    <div class=dialog id=dlg2>
         <div id=log></div>
         <div id=fps_stats></div>
     </div>
     
-    <canvas id=csscanvas width=512 height=512></canvas>
+    <canvas id=csscanvas width=512 height=512 style='display:none;'></canvas>
+	<div id=myct class=ct></div>
 </html>
     
 <script>
@@ -125,6 +125,7 @@
 		}
 	};
 	var sc, ct, rdr, cmr;
+	var nsmx4;
 	var fps;
 	
     f.img.dom = new Image();
@@ -140,7 +141,8 @@
         
         sc = new THREE.Scene();
         ct = document.createElement('div');
-        ct.style.display = 'inline';
+		ct.id = 'cvsct';
+		ct.className  = 'ct';
         document.body.appendChild(ct);
 
         rdr = new THREE.CanvasRenderer();
@@ -149,6 +151,7 @@
         rdr.setSize(512, 512);
         ct.appendChild(rdr.domElement);
         rdr.domElement.id = 'mycanvas';
+		
 		
         fps = new Stats();
         fps.setMode(0); // 0: fps, 1: ms
@@ -162,9 +165,27 @@
 		$('body').mouseup(onMouseUp);
 		$('body').mousemove(onMouseMove);
         
+		
         init2d();        
         initCSS();
         
+		var nscn2scnMtx = new THREE.Matrix4(
+			rdr.domElement.width/2, 0, 0, 0,
+			0, -rdr.domElement.height/2, 0, rdr.domElement.height/2,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		);
+		console.log(nscn2scnMtx);
+		
+		var pj = new THREE.Projector();
+		var pjvt = pj.projectVector(new THREE.Vector3(0,0,0), cmr);
+		console.log(pjvt);
+		
+		pjvt.applyProjection(nscn2scnMtx);
+		console.log(pjvt);
+		
+		//var upjvt = pj.unprojectVector(new THREE.Vector3(2, 0, 0), cmr);
+		//console.log(upjvt);
         animate();
     }
     function init2d() {
@@ -256,32 +277,346 @@
             uv1.copy(ge.faceVertexUvs[0][i][1]);
             uv2.copy(ge.faceVertexUvs[0][i][2]);
             uv3.copy(ge.faceVertexUvs[0][i][3]);
-            
-            //convert to screen coord
-            uv0.y = 1 - uv0.y;
-            uv1.y = 1 - uv1.y;
-            uv2.y = 1 - uv2.y;
-            uv3.y = 1 - uv3.y;
-            
-            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
-            drawTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, ctx);
-            clipImage(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y, f.img.dom, ctx);
-            var mhimg = new Image();
-            mhimg.src = cvs[0].toDataURL();
-            cvs[0].appendChild(mhimg);
-            
-            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
-            drawTriangle(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, ctx);
-            clipImage(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, uv2.x, uv2.y, uv3.x, uv3.y, uv0.x, uv0.y, f.img.dom, ctx);
-            var mhimg = new Image();
-            mhimg.src = cvs[0].toDataURL();
-            
-            ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
-            
-            cvs[0].appendChild(mhimg);
+            if(0) {
+				//convert to screen coord
+				uv0.y = 1 - uv0.y;
+				uv1.y = 1 - uv1.y;
+				uv2.y = 1 - uv2.y;
+				uv3.y = 1 - uv3.y;
+				
+				ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+				drawTriangle(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, ctx);
+				clipImage(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, uv0.x, uv0.y, uv1.x, uv1.y, uv2.x, uv2.y, f.img.dom, ctx);
+				var mhimg = new Image();
+				mhimg.src = cvs[0].toDataURL();
+				mhimg.style.position = 'absolute';
+				//mhimg.style.webkitTransform = sprintf('matrix(1,0,0,1,0,0)');
+				cvs[0].appendChild(mhimg);
+				$('#myct')[0].appendChild(mhimg);
+				
+
+				ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+				drawTriangle(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, ctx);
+				clipImage(v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, uv2.x, uv2.y, uv3.x, uv3.y, uv0.x, uv0.y, f.img.dom, ctx);
+				var mhimg = new Image();
+				mhimg.src = cvs[0].toDataURL();
+				mhimg.style.position = 'absolute';
+				//mhimg.style.webkitTransform = sprintf('matrix(1,0,0,1,0,0)');
+				ctx.clearRect(0, 0, cvs.attr('width'), cvs.attr('width'));
+				
+				$('#myct')[0].appendChild(mhimg);
+			}
+			else
+				var v0 = new Vertex(0,0,0);
+				var v1 = new Vertex(200,0,0);
+				var v2 = new Vertex(200,300,0);
+				var v3 = new Vertex(0,300,0);
+			
+				var uvs = [[0,0], [1,0], [1,1], [0,1]];
+			
+				var fc1 = new Face(0, v0, v1, v2);
+				fc1.setUV(null, uvs, [0,1,2], f.img.dom);
+				if(fc1.chkin())fc1.renderImg();
+				
+				var fc2 = new Face(1, v2, v3, v0);
+				fc2.setUV(null, uvs, [2,3,0], f.img.dom);
+				if(fc2.chkin())fc2.renderImg();
         }
         
     }
+var polySize = 1.3, polyCenter = 1 / 3;
+var isCanvasRender=0,  isCanvasFace=0;
+
+
+function Vertex( x, y, z ) {
+	this.dx = x; this.dy = y; this.dz = z;
+	this.bx = 0; this.by = 0; this.bz = 0;
+	this.bx1 = 0; this.by1 = 0; this.bz1 = 0;
+	this.sx = 0; this.sy = 0; this.sz = 0;
+	this.tBone = null;
+	this.boneMtx0 = null;
+	this.boneMtx1 = null;
+};
+
+
+function Face( id, v0, v1, v2 ) {
+	this.id = id;
+	this.v0 = v0;
+	this.v1 = v1;
+	this.v2 = v2;
+	this.sz = v0.dz + v1.dz + v2.dz;
+	this.visible = false;
+}
+
+Face.prototype.renderCvs = function( tg ) {
+	var x0 = this.v0.sx, y0 = this.v0.sy;
+	var ma = this.uva * this.a + this.uvb * this.c;
+	var mc = this.uvc * this.a + this.uvd * this.c;
+	var mb = this.uva * this.b + this.uvb * this.d;
+	var md = this.uvc * this.b + this.uvd * this.d;
+	var mtx = this.uvtx * this.a + this.uvty * this.c;
+	var mty = this.uvtx * this.b + this.uvty * this.d;
+	
+	var x1 = this.v1.sx, x2 = this.v2.sx, y1 = this.v1.sy, y2 = this.v2.sy;
+	var cx = ( x0 + x1 + x2 ) * polyCenter;
+	var cy = ( y0 + y1 + y2 ) * polyCenter;
+	var xd = x0 - cx;
+	var yd = y0 - cy;
+	var l = polySize / Math.sqrt( xd * xd + yd * yd );
+	x0 += xd * l;
+	y0 += yd * l;
+	xd = x1 - cx; yd = y1 - cy;
+	l = polySize / Math.sqrt( xd * xd + yd * yd );
+	x1 += xd * l;
+	y1 += yd * l;
+	xd = x2 - cx; yd = y2 - cy;
+	l = polySize / Math.sqrt( xd * xd + yd * yd );
+	x2 += xd * l;
+	y2 += yd * l;
+	
+	tg.beginPath();
+	tg.moveTo( x0, y0 );
+	tg.lineTo( x1, y1 );
+	tg.lineTo( x2, y2 );
+	tg.closePath();
+	
+	tg.fillStyle = this.style;
+	tg.save();
+	tg.transform( ma, mb, mc, md, mtx + x0, mty + y0 );
+	tg.fill();
+	tg.restore();
+};
+
+Face.prototype.renderImg = function() {
+	var x0 = this.v0.sx, y0 = this.v0.sy;
+	var ma = this.uva * this.a + this.uvb * this.c;
+	var mc = this.uvc * this.a + this.uvd * this.c;
+	var mb = this.uva * this.b + this.uvb * this.d;
+	var md = this.uvc * this.b + this.uvd * this.d;
+	var mtx = this.uvtx * this.a + this.uvty * this.c;
+	var mty = this.uvtx * this.b + this.uvty * this.d;
+	this.faceImg.style.webkitTransform = "matrix(" + ma + ", " + mb + ", " + mc + ", " + md + ", " + ( mtx + x0 ) + ", " + ( mty + y0 ) + ")";
+};
+
+Face.prototype.setUV = function( mat, uv, uvID, tex ) {
+	var w = tex.width;
+	var h = tex.height;
+	var t = uv[ uvID[0] ];
+	u0 = w * t[0];
+	v0 = h * ( 1 - t[1] );
+	t = uv[ uvID[1] ];
+	u1 = w * t[0];
+	v1 = h * ( 1 - t[1] );
+	t = uv[ uvID[2] ];
+	u2 = w * t[0];
+	v2 = h * ( 1 - t[1] );
+	
+	var a = u1 - u0;
+	var b = v1 - v0;
+	var c = u2 - u0;
+	var d = v2 - v0;
+	var tx = u0;
+	var ty = v0;
+	var a2 = ( a == 0 ) ? 1 : 1 / a;
+	var tmpb = ( a == 0 ) ? b : b / a;
+	var tmpd = d - c * tmpb;
+	var c2 = -( c * a2 ) / ( tmpd == 0 ? 1 : tmpd );
+	var d2 = 1 / ( tmpd == 0 ? 1 : tmpd );
+	var tmpty = ty - tx * tmpb;
+	this.uva = a2 - tmpb * c2;
+	this.uvb = -tmpb * d2;
+	this.uvc = c2;
+	this.uvd = d2;
+	this.uvtx = ( -tx * a2 ) - tmpty * c2;
+	this.uvty = -tmpty * d2;
+	
+	var uvxd0 = u1 - u0;
+	var uvyd0 = v1 - v0;
+	var l0 = uvxd0 * uvxd0 + uvyd0 * uvyd0;
+	var uvxd1 = u2 - u1;
+	var uvyd1 = v2 - v1;
+	var l1 = uvxd1 * uvxd1 + uvyd1 * uvyd1;
+	var uvxd2 = u0 - u2;
+	var uvyd2 = v0 - v2;
+	var l2 = uvxd2 * uvxd2 + uvyd2 * uvyd2;
+	var r, pivx, pivy;
+	
+	if ( l0 >= l1 && l0 >= l2 ) {
+		r = Math.atan2( uvyd0, uvxd0 );
+		pivx = u0;
+		pivy = v0;
+		w = Math.sqrt( l0 );
+	}else if ( l1 >= l2 ) {
+		r = Math.atan2( uvyd1, uvxd1 );
+		pivx = u1;
+		pivy = v1;
+		w = Math.sqrt( l1 );
+	}else {
+		r = Math.atan2( uvyd2, uvxd2 );
+		pivx = u2;
+		pivy = v2;
+		w = Math.sqrt( l2 );
+	}
+	
+	u0 -= pivx;
+	v0 -= pivy;
+	u1 -= pivx;
+	v1 -= pivy;
+	u2 -= pivx;
+	v2 -= pivy;
+	r = -r;
+	var tmpu = Math.cos( r ) * u0 - Math.sin( r ) * v0;
+	v0 = Math.sin( r ) * u0 + Math.cos( r ) * v0;
+	u0 = tmpu;
+	tmpu = Math.cos( r ) * u1 - Math.sin( r ) * v1;
+	v1 = Math.sin( r ) * u1 + Math.cos( r ) * v1;
+	u1 = tmpu;
+	tmpu = Math.cos( r ) * u2 - Math.sin( r ) * v2;
+	v2 = Math.sin( r ) * u2 + Math.cos( r ) * v2;
+	u2 = tmpu;
+	
+	if ( v0 < 1 && v1 < 1 && v2 < 1 ) {
+		if ( v0 > v1 && v0 > v2 ) {
+			v0 = 1;
+		}else if ( v1 > v2 ) {
+			v1 = 1;
+		}else {
+			v2 = 1;
+		}
+	}
+	
+	h = ( v0 > v1 ) ? ( v0 > v2 ? v0 : v2 ) : ( v1 > v2 ? v1 : v2 );
+	
+	var margin = isCanvasRender ? 1 : 1;
+	u0 += margin;
+	v0 += margin;
+	u1 += margin;
+	v1 += margin;
+	u2 += margin;
+	v2 += margin;
+	w += margin + margin;
+	h += margin + margin;
+	
+	var canvas = document.createElement( "canvas" );
+	canvas.width = Math.ceil( w );
+	canvas.height = Math.ceil( h );
+	var ctx = canvas.getContext( "2d" );
+	
+	a = u1 - u0;
+	b = v1 - v0;
+	c = u2 - u0;
+	d = v2 - v0;
+	var ma = this.uva * a + this.uvb * c;
+	var mc = this.uvc * a + this.uvd * c;
+	var mb = this.uva * b + this.uvb * d;
+	var md = this.uvc * b + this.uvd * d;
+	var mtx = this.uvtx * a + this.uvty * c + u0;
+	var mty = this.uvtx * b + this.uvty * d + v0;
+	
+	if ( isCanvasRender ) {
+		ctx.save();
+		ctx.setTransform( ma, mb, mc, md, mtx, mty );
+		ctx.drawImage( tex, 0, 0 );
+		ctx.restore();
+		this.style = ctx.createPattern( canvas, "no-repeat" );
+	}else {
+		ctx.fillStyle = "rgba(0,0,0,0)";
+		ctx.fillRect( 0, 0, canvas.width, canvas.height );
+		
+		var x0 = u0, x1 = u1, x2 = u2, y0 = v0, y1 = v1, y2 = v2;
+		var cx = ( x0 + x1 + x2 ) * polyCenter;
+		var cy = ( y0 + y1 + y2 ) * polyCenter;
+		var xd = x0 - cx;
+		var yd = y0 - cy;
+		margin = 3;
+		var l = margin / Math.sqrt( xd * xd + yd * yd );
+		x0 += xd * l;
+		y0 += yd * l;
+		xd = x1 - cx; yd = y1 - cy;
+		l = margin / Math.sqrt( xd * xd + yd * yd );
+		x1 += xd * l;
+		y1 += yd * l;
+		xd = x2 - cx; yd = y2 - cy;
+		l = margin / Math.sqrt( xd * xd + yd * yd );
+		x2 += xd * l;
+		y2 += yd * l;
+		
+		ctx.beginPath();
+		ctx.moveTo( x0, y0  );
+		ctx.lineTo( x1, y1 );
+		ctx.lineTo( x2, y2 );
+		ctx.closePath();
+		ctx.clip();
+		ctx.setTransform( ma, mb, mc, md, mtx, mty );
+		ctx.drawImage( tex, 0, 0 );
+		
+		if ( isCanvasFace ) {
+			this.faceImg = canvas;
+		}else {
+			this.faceImg = new Image();
+			this.faceImg.src = canvas.toDataURL();
+		}
+		this.faceImg.style.position = "absolute";
+		//this.faceImg.style.visibility = "hidden";
+		this.faceImg.style.webkitTransformOrigin = "0 0";
+		$('#myct')[0].appendChild( this.faceImg );
+	}
+	
+	a = u1 - u0;
+	b = v1 - v0;
+	c = u2 - u0;
+	d = v2 - v0;
+	tx = u0;
+	ty = v0;
+	a2 = ( a == 0 ) ? 1 : 1 / a;
+	tmpb = ( a == 0 ) ? b : b / a;
+	tmpd = d - c * tmpb;
+	c2 = -( c * a2 ) / ( tmpd == 0 ? 1 : tmpd );
+	d2 = 1 / ( tmpd == 0 ? 1 : tmpd );
+	tmpty = ty - tx * tmpb;
+	this.uva = a2 - tmpb * c2;
+	this.uvb = -tmpb * d2;
+	this.uvc = c2;
+	this.uvd = d2;
+	this.uvtx = ( -tx * a2 ) - tmpty * c2;
+	this.uvty = -tmpty * d2;
+	this.chkin = isCanvasRender ? this.chkin1 : this.chkin2;
+};
+
+Face.prototype.chkin1 = function() {
+	var v0 = this.v0, v1 = this.v1,  v2 = this.v2;
+	if ( ( this.a = v1.sx - v0.sx ) * ( this.d = v2.sy - v0.sy ) - ( this.b = v1.sy - v0.sy ) * ( this.c = v2.sx - v0.sx ) > 0 ) {
+		this.sz = v0.sz + v1.sz + v2.sz;
+		return true;
+	}else {
+		return false;
+	}
+};
+
+Face.prototype.chkin2 = function() {
+	var v0 = this.v0, v1 = this.v1,  v2 = this.v2;
+	if ( ( this.a = v1.sx - v0.sx ) * ( this.d = v2.sy - v0.sy ) - ( this.b = v1.sy - v0.sy ) * ( this.c = v2.sx - v0.sx ) > 0 ) {
+		this.sz = v0.sz + v1.sz + v2.sz;
+		if ( !this.visible ) {
+			this.visible = true;
+			this.faceImg.style.visibility = "visible";
+		}
+		return true;
+	}else {
+		if ( this.visible ) {
+			this.visible = false;
+			this.faceImg.style.visibility = "hidden";
+		}
+		return false;
+	}
+};
+
+Face.prototype.show = function( bool ) {
+	if ( this.faceImg ) {
+		this.visible = bool;
+		this.faceImg.style.visibility = bool ? "visible" : "hidden";
+	}
+};
     
     function animate() {
         requestAnimationFrame(animate);
@@ -317,18 +652,16 @@
 	var lastm = new THREE.Vector3();
 	
     var cvs;
-    var cvsw;
-    var cvsh;
     var ftw;
     var fth;
     var j2tp = new THREE.Vector3();
     function j2t(jx, jy) {
         if(cvs == null) {
             cvs = $('#mycanvas');
-            cvsw = cvs.width();
-            cvsh = cvs.height();
-            ftw = 512;
-            fth = 512;                
+            cvsw = rdr.domElement.width;
+            cvsh = rdr.domElement.height;  
+            ftw = cmr.right - cmr.left;
+            fth = cmr.top - cmr.bottom;                
         }
         j2tp.x = (jx - cvs[0].offsetLeft - cvsw/2) * ftw / cvsw;
         j2tp.y = -(jy - cvs[0].offsetTop - cvsh/2) * fth / cvsh;
@@ -356,6 +689,8 @@
         j2t(event.pageX, event.pageY);
         lastm.copy(currm);
 		currm.copy(j2tp);
+		
+
 		
 		if(md) {
 			cmrangle.t += (currm.x - lastm.x) / 200;
