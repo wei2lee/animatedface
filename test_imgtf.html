@@ -144,14 +144,15 @@
 			
 			
 		   ctx.save();
-		   ctx.beginPath();
+		   /*
+            ctx.beginPath();
 		   ctx.moveTo(v1x, vly);
 		   ctx.lineTo(v2x, v2y);
 		   ctx.lineTo(v3x, v3y);
 		   ctx.closePath();
 		   ctx.clip();
 		   //*/
-            ctx.setTransform(m11, m12, m21, m22, dx, dy);
+            ctx.transform(m11, m12, m21, m22, dx, dy);
             ctx.drawImage(img,10,10);
             
 			ctx.restore();
