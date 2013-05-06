@@ -91,6 +91,11 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 	_gradientMapQuality --; // Fix UVs
 
+    cuv1 = null;
+    cuv2 = null;
+    cuv3 = null;
+    
+    
 	// dash+gap fallbacks for Firefox and everything else
 
 	if ( _context.setLineDash === undefined ) {
@@ -328,7 +333,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 					expand( _v3.positionScreen, _v1.positionScreen );
 
 				}
-
+                
 				_elemBox.setFromPoints( [ _v1.positionScreen, _v2.positionScreen, _v3.positionScreen ] );
 
 				renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
@@ -676,8 +681,17 @@ THREE.CanvasRenderer = function ( parameters ) {
 					if ( material.map.mapping instanceof THREE.UVMapping ) {
 
 						_uvs = element.uvs[ 0 ];
-						//patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map );
-                        clipImage( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map.image, false );
+						
+                        if(material.useTriangleTexture === undefined || !material.useTriangleTexture) {
+                            //_context.createPattern + _context.fill is EVEN slower
+                            patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map );
+                        } else if(material.useTriangleTexture) {
+                            //_context.clip(...) + _context.drawImage(...) is VERY slow in MOBILE
+                            //we precompute a clipped triangle image for each Face and omit _context.clip
+                            
+                            
+                            clipImage( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, 1-_uvs[ uv1 ].y, _uvs[ uv2 ].x, 1-_uvs[ uv2 ].y, _uvs[ uv3 ].x, 1-_uvs[ uv3 ].y, material.map.image, false, material.doubleDraw );
+                        }
 					}
 
 
@@ -1069,8 +1083,9 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 		}
 
-		function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image, eclip ) {
+		function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image, eclip, ddraw ) {
             if(eclip === undefined) eclip = true;
+            if(ddraw === undefined) ddraw = false;
 			// http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
 
 			var a, b, c, d, e, f, det, idet,
@@ -1101,10 +1116,14 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 			_context.save();
 			_context.transform( a, b, c, d, e, f );
-			if(eclip){ _context.clip(); console.log('eclip');}
-			_context.drawImage( image, 0, 0 );
+			if(eclip) _context.clip();
+            _context.drawImage( image, 0, 0 );
+            
+            if(ddraw){ 
+                _context.drawImage( image, 0, 0 );
+                _context.drawImage( image, 0, 0 );
+            }
 			_context.restore();
-
 		}
 
 		function getGradientTexture( color1, color2, color3, color4 ) {

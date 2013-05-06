@@ -1,6 +1,3 @@
-var THREEEX = THREEEX || {  };
-
-
 THREE.Face3.prototype.set = function(a,b,c) {
     this.a=a;
     this.b=b;
@@ -95,17 +92,98 @@ function projectCvs2World(vt, rdr, cmr) {
     return vt;
 }
 
-function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, tex, rdr, cmr) {
+function createTriangleTextureMesh(mh) {
+    var ge = mh.geometry;
+    var ma = mh.material;
+    var data = null;
     
+    if(mh.material == null || !(mh.material instanceof THREE.MeshBasicMaterial) || mh.material.map == null) {
+        return;
+    }
+    
+    var tma = new THREE.MeshFaceMaterial();
+    
+    for(i = 0, flen = ge.faces.length ; i < flen ; i++)  {
+        var f = ge.faces[i];
+        
+        if(f instanceof THREE.Face3) {
+            var tf31 = f;
+            var v0 = ge.vertices[f.a];
+            var v1 = ge.vertices[f.b];
+            var v2 = ge.vertices[f.c];
+            var uv0 = ge.faceVertexUvs[0][i][0];
+            var uv1 = ge.faceVertexUvs[0][i][1];
+            var uv2 = ge.faceVertexUvs[0][i][2];
+            data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            tma.materials.push(data.ma);
+            tf31.materialIndex = tma.materials.length - 1;
+            
+            uv0.copy(data.uv0); uv1.copy(data.uv1); uv2.copy(data.uv2);
+            
+        } else if(f instanceof THREE.Face4) {
+            var v0 = ge.vertices[f.a];
+            var v1 = ge.vertices[f.b];
+            var v2 = ge.vertices[f.c];
+            var v3 = ge.vertices[f.d];
+            var uv0 = ge.faceVertexUvs[0][i][0];
+            var uv1 = ge.faceVertexUvs[0][i][1];
+            var uv2 = ge.faceVertexUvs[0][i][2];
+            var uv3 = ge.faceVertexUvs[0][i][3];
+            
+            
+            var tf31 = new THREE.Face3(v0, v1, v2);
+            data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            tma.materials.push(data.ma);
+            tf31.materialIndex = tma.materials.length - 1;
+            tuv31 = [data.uv0, data.uv1, data.uv2];
+            
+            var tf32 = new THREE.Face3(v2, v3, v0);
+            data = createTriangleTextureData(v2, v3, v0, uv2, uv3, uv0, ma.map.image, rdr, cmr);
+            tma.materials.push(data.ma);
+            tf32.materialIndex = tma.materials.length - 1;
+            tuv32 = [data.uv0, data.uv1, data.uv2];
+            
+            ge.faces = ge.faces.splice(i, 1, tf31, tf32);
+            ge.faceVertexUvs = ge.faceVertexUvs.splice(i, 1, tuv31, tuv32);
+            
+        }
+    }
+    mh.material = tma;
+    
+    
+    return mh;
+}
+
+
+function expand( v1, v2 ) {
+
+    var x = v2.x - v1.x, y =  v2.y - v1.y,
+    det = x * x + y * y, idet;
+
+    if ( det === 0 ) return;
+
+    idet = 1 / Math.sqrt( det );
+
+    x *= idet; y *= idet;
+
+    v2.x += x; v2.y += y;
+    v1.x -= x; v1.y -= y;
+
+}
+
+function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, img, rdr, cmr) {
+    if(img == null || img.width == 0 || img.height == null) {
+        console.log('img is null or width is 0 or height is 0');
+    }
     
     ctv0.copy(v0);
-    projectWorld2Cvs(ctv0, rdr, cmr);
+    //projectWorld2Cvs(ctv0, rdr, cmr);
     
     ctv1.copy(v1);
-    projectWorld2Cvs(ctv1, rdr, cmr);
+    //projectWorld2Cvs(ctv1, rdr, cmr);
     
     ctv2.copy(v2);
-    projectWorld2Cvs(ctv2, rdr, cmr);
+    //projectWorld2Cvs(ctv2, rdr, cmr);
     
     ctuv0.copy(uv0);
     ctuv0.y = 1 - ctuv0.y;
@@ -116,10 +194,14 @@ function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, tex, rdr, cmr) {
     ctuv2.copy(uv2);
     ctuv2.y = 1 - ctuv2.y;
     
-    var img = new Image();
+    
+    var dataimg = new Image();
     var cvs = document.createElement('canvas');
     var ctx = cvs.getContext('2d');
-    
+    ctx.imageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.oImageSmoothingEnabled = false;
+    ctx.webkitImageSmoothingEnabled = false;
     ctlb.x = Math.min(ctv0.x, ctv1.x, ctv2.x);
     ctlb.y = Math.min(ctv0.y, ctv1.y, ctv2.y);
     ctub.x = Math.max(ctv0.x, ctv1.x, ctv2.x);
@@ -136,16 +218,21 @@ function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, tex, rdr, cmr) {
     ctv2.x -= ctlb.x;
     ctv2.y -= ctlb.y;        
     drawTriangle(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctx);
-    clipImage(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctuv0.x, ctuv0.y, ctuv1.x, ctuv1.y, ctuv2.x, ctuv2.y, tex, ctx);
-    img.src = cvs.toDataURL();
+    clipImage(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctuv0.x, ctuv0.y, ctuv1.x, ctuv1.y, ctuv2.x, ctuv2.y, img, ctx);
+    dataimg.src = cvs.toDataURL();
     
     
-    ctuv0.set(ctv0.x / cvs.width, ctv0.y / cvs.height);
-    ctuv1.set(ctv1.x / cvs.width, ctv1.y / cvs.height);
-    ctuv2.set(ctv2.x / cvs.width, ctv2.y / cvs.height);
+    ctuv0.set(ctv0.x / cvs.width, 1 - (ctv0.y / cvs.height));
+    ctuv1.set(ctv1.x / cvs.width, 1 - (ctv1.y / cvs.height));
+    ctuv2.set(ctv2.x / cvs.width, 1 - (ctv2.y / cvs.height));
     
     
-    return {imgdom:img, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
+    var datatex = new THREE.Texture(dataimg); 
+    datatex.needsUpdate = true;
+    
+    var datama = new THREE.MeshBasicMaterial({map:datatex, useTriangleTexture:true, doubleDraw:true});
+    
+    return {ma:datama, tex:datatex, imgdom:dataimg, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
 }
 
 
