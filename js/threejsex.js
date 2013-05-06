@@ -230,7 +230,7 @@ function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, img, rdr, cmr) {
     var datatex = new THREE.Texture(dataimg); 
     datatex.needsUpdate = true;
     
-    var datama = new THREE.MeshBasicMaterial({map:datatex, useTriangleTexture:true, doubleDraw:true});
+    var datama = new THREE.MeshBasicMaterial({map:datatex, useTriangleTexture:true, doubleDraw:true, overdraw:false});
     
     return {ma:datama, tex:datatex, imgdom:dataimg, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
 }

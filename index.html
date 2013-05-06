@@ -27,9 +27,9 @@
 		}
 	
 		.dialog {
-            background-color:#fbfbfb;
+            background-color:rgba(251, 251, 251, 0.5);
             position:relative;
-            min-height:150px;
+            min-height:47px;
 			padding:4px 2px 2px 6px;
 			
 			border:1px solid #cccccc;
@@ -122,13 +122,13 @@
     
     function init() {
         f.img.tex = THREE.ImageUtils.loadTexture(f.img.src);
-        f.img.b.w = f.img.dom.width;
-        f.img.b.h = f.img.dom.height;
+        f.img.b.w = f.img.dom.width*2;
+        f.img.b.h = f.img.dom.height*2;
         
         //cmr = new THREE.OrthographicCamera(-256, +256, +256, -256, -1256, +1256);
         cmr = new THREE.PerspectiveCamera( 70, 1, 1, 1000 );
         
-        cmr.position.z = 500;
+        cmr.position.z = 512;
         
         sc = new THREE.Scene();
         ct = document.createElement('div');
@@ -136,21 +136,6 @@
 		ct.className  = 'ct';
         document.body.appendChild(ct);
 
-				var geometry = new THREE.CubeGeometry( 200, 200, 200 );
-
-				for ( var i = 0; i < geometry.faces.length; i ++ ) {
-
-					geometry.faces[ i ].color.setHex( Math.random() * 0xffffff );
-
-				}
-
-				var material = new THREE.MeshBasicMaterial( { vertexColors: THREE.FaceColors } );
-
-				cube = new THREE.Mesh( geometry, material );
-				cube.position.y = 150;
-				//sc.add( cube );
-        
-        
         rdr = new THREE.CanvasRenderer();
         //rdr.sortObjects = false;
         //rdr.sortElements = false;
@@ -181,7 +166,7 @@
         mh.material = ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(f.img.dom)});
         //mh.material =new THREE.MeshBasicMaterial({color:0xff5555});
         mh.geometry = ge = new THREE.Geometry();
-        var i, j, k, mi = 9, mj = 9;
+        var i, j, k, mi = 11, mj = 11;
         ge.mi = mi; ge.mj = mj;
         var data;
         for(i = 0 ; i < mi ; i++) {
@@ -241,7 +226,7 @@
 		if(ltime == 0){ ctime = new Date().getTime();  el = 0; }
 		else { ctime = new Date().getTime(); el = ctime - ltime; }
 		ltime = ctime;
-	/*
+	
         cmrangle.c = cmrangle.c + (cmrangle.t - cmrangle.c) * cmrangle.k;
 		cmr.position.x = Math.cos( cmrangle.c ) * 512;
 		cmr.position.z = Math.sin( cmrangle.c ) * 512;

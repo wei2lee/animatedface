@@ -683,13 +683,8 @@ THREE.CanvasRenderer = function ( parameters ) {
 						_uvs = element.uvs[ 0 ];
 						
                         if(material.useTriangleTexture === undefined || !material.useTriangleTexture) {
-                            //_context.createPattern + _context.fill is EVEN slower
                             patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map );
                         } else if(material.useTriangleTexture) {
-                            //_context.clip(...) + _context.drawImage(...) is VERY slow in MOBILE
-                            //we precompute a clipped triangle image for each Face and omit _context.clip
-                            
-                            
                             clipImage( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, 1-_uvs[ uv1 ].y, _uvs[ uv2 ].x, 1-_uvs[ uv2 ].y, _uvs[ uv3 ].x, 1-_uvs[ uv3 ].y, material.map.image, false, material.doubleDraw );
                         }
 					}
@@ -1155,14 +1150,15 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 		// Hide anti-alias gaps
 
-		function expand( v1, v2 ) {
-
-			var x = v2.x - v1.x, y =  v2.y - v1.y,
+		function expand( v1, v2, pixels ) {
+            if(pixels === undefined) pixels = 0.32;
+            
+			var x = v2.x - v1.x, y = v2.y - v1.y,
 			det = x * x + y * y, idet;
 
 			if ( det === 0 ) return;
 
-			idet = 1 / Math.sqrt( det );
+			idet = pixels / Math.sqrt( det );
 
 			x *= idet; y *= idet;
 
