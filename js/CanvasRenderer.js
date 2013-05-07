@@ -1151,7 +1151,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 		// Hide anti-alias gaps
 
 		function expand( v1, v2, pixels ) {
-            if(pixels === undefined) pixels = 0.32;
+            if(pixels === undefined) pixels = 1;
             
 			var x = v2.x - v1.x, y = v2.y - v1.y,
 			det = x * x + y * y, idet;

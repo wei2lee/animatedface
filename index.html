@@ -125,9 +125,11 @@
         f.img.b.w = f.img.dom.width*2;
         f.img.b.h = f.img.dom.height*2;
         
-        //cmr = new THREE.OrthographicCamera(-256, +256, +256, -256, -1256, +1256);
-        cmr = new THREE.PerspectiveCamera( 70, 1, 1, 1000 );
         
+        var fsw = 512;
+        var fsh = 512;
+        //cmr = new THREE.OrthographicCamera(-fsw/2, +fsw/2, +fsh/2, -fsw/2, -1256, +1256);
+        cmr = new THREE.PerspectiveCamera( 70, 1, 1, 1000 );
         cmr.position.z = 512;
         
         sc = new THREE.Scene();
@@ -163,7 +165,7 @@
         
         mh = new THREE.Mesh();
         mh.position.z = 100;
-        mh.material = ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(f.img.dom)});
+        mh.material = ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(f.img.dom), side:THREE.DoubleSide});
         //mh.material =new THREE.MeshBasicMaterial({color:0xff5555});
         mh.geometry = ge = new THREE.Geometry();
         var i, j, k, mi = 11, mj = 11;
@@ -204,6 +206,42 @@
         ge.computeBoundingSphere();
         sc.add(mh);
         
+        
+        
+        /*
+        var vtxs1 = [new THREE.Vector3(250, 0), new THREE.Vector3(0, 250), new THREE.Vector3(0, 0)];
+        var vtxs2 = [new THREE.Vector3().copy(vtxs1[0]), new THREE.Vector3().copy(vtxs1[1]), new THREE.Vector3().copy(vtxs1[2])];
+        
+        expand(vtxs2[0], vtxs2[1]);
+        expand(vtxs2[1], vtxs2[2]);
+        expand(vtxs2[2], vtxs2[0]);
+        
+        console.log('red');
+        console.log(vtxs1);
+        console.log('blue');
+        console.log(vtxs2);        
+        var mht1 = new THREE.Mesh()
+        var get1 = new THREE.Geometry();
+        get1.faces.push(new THREE.Face3(0,1,2));
+        get1.vertices = vtxs1;
+        mht1.geometry = get1;
+        mht1.position = new THREE.Vector3(-0, -0, 0);
+        
+        var mat1 = new THREE.MeshBasicMaterial({wireframe:true, color:0xff0000});
+        mht1.material = mat1;
+        get1.computeBoundingSphere();
+        sc.add(mht1);
+        
+        var mht2 = new THREE.Mesh()
+        var get2 = new THREE.Geometry();
+        get2.faces.push(new THREE.Face3(0,1,2));
+        get2.vertices = vtxs2;
+        var mat2 = new THREE.MeshBasicMaterial({wireframe:true, color:0x0000ff});
+        mht2.geometry = get2;
+        mht2.material = mat2;        
+        mht2.position = new THREE.Vector3(-0, -0, 0);
+        get2.computeBoundingSphere();
+        sc.add(mht2);//*/
     }
 
     function animate() {
@@ -250,15 +288,15 @@
         
         var msg1 = ge ? sprintf('Animated Mesh with Triangle Texture in Canvas2D: vertices:%d, faces:%d', ge.vertices.length, ge.faces.length) : '';
         var msg2 = mov ? sprintf('(%.1f, %.1f)', currm.x, currm.y) : '';
-        $('#log').html(msg1 + '<br>' + msg2);
+        $('#log').html(msg1);
 	}
 	function render() {
         rdr.render(sc, cmr);
 	}
     
     function projectCvs2World2(vt, rdr, cmr) {
-        vt.x = (vt.x / rdr.domElement.width - 0.5) * (cmr.right - cmr.left);
-        vt.y = -(vt.y / rdr.domElement.height - 0.5) * (cmr.top - cmr.bottom);
+        vt.x = (vt.x / rdr.domElement.width - 0.5) * (rdr.domElement.width);
+        vt.y = -(vt.y / rdr.domElement.height - 0.5) * (rdr.domElement.height);
         return vt;
     }
 	

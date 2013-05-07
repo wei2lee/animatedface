@@ -114,7 +114,8 @@ function createTriangleTextureMesh(mh) {
             var uv0 = ge.faceVertexUvs[0][i][0];
             var uv1 = ge.faceVertexUvs[0][i][1];
             var uv2 = ge.faceVertexUvs[0][i][2];
-            data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            data = createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            data.ma.side = mh.material.side;
             tma.materials.push(data.ma);
             tf31.materialIndex = tma.materials.length - 1;
             
@@ -132,19 +133,21 @@ function createTriangleTextureMesh(mh) {
             
             
             var tf31 = new THREE.Face3(v0, v1, v2);
-            data = createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            data = createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, ma.map.image);
+            data.ma.side = mh.material.side;
             tma.materials.push(data.ma);
             tf31.materialIndex = tma.materials.length - 1;
             tuv31 = [data.uv0, data.uv1, data.uv2];
             
             var tf32 = new THREE.Face3(v2, v3, v0);
-            data = createTriangleTextureData(v2, v3, v0, uv2, uv3, uv0, ma.map.image, rdr, cmr);
+            data = createTriangleTexture(v2, v3, v0, uv2, uv3, uv0, ma.map.image);
+            data.ma.side = mh.material.side;
             tma.materials.push(data.ma);
             tf32.materialIndex = tma.materials.length - 1;
             tuv32 = [data.uv0, data.uv1, data.uv2];
             
             ge.faces = ge.faces.splice(i, 1, tf31, tf32);
-            ge.faceVertexUvs = ge.faceVertexUvs.splice(i, 1, tuv31, tuv32);
+            ge.faceVertexUvs[0] = ge.faceVertexUvs[0].splice(i, 1, tuv31, tuv32);
             
         }
     }
@@ -153,7 +156,6 @@ function createTriangleTextureMesh(mh) {
     
     return mh;
 }
-
 
 function expand( v1, v2 ) {
 
@@ -171,19 +173,16 @@ function expand( v1, v2 ) {
 
 }
 
-function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, img, rdr, cmr) {
+function createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, img) {
     if(img == null || img.width == 0 || img.height == null) {
         console.log('img is null or width is 0 or height is 0');
     }
     
     ctv0.copy(v0);
-    //projectWorld2Cvs(ctv0, rdr, cmr);
     
     ctv1.copy(v1);
-    //projectWorld2Cvs(ctv1, rdr, cmr);
     
     ctv2.copy(v2);
-    //projectWorld2Cvs(ctv2, rdr, cmr);
     
     ctuv0.copy(uv0);
     ctuv0.y = 1 - ctuv0.y;
@@ -198,10 +197,10 @@ function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, img, rdr, cmr) {
     var dataimg = new Image();
     var cvs = document.createElement('canvas');
     var ctx = cvs.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
-    ctx.oImageSmoothingEnabled = false;
-    ctx.webkitImageSmoothingEnabled = false;
+    //ctx.imageSmoothingEnabled = false;
+    //ctx.mozImageSmoothingEnabled = false;
+    //ctx.oImageSmoothingEnabled = false;
+    //ctx.webkitImageSmoothingEnabled = false;
     ctlb.x = Math.min(ctv0.x, ctv1.x, ctv2.x);
     ctlb.y = Math.min(ctv0.y, ctv1.y, ctv2.y);
     ctub.x = Math.max(ctv0.x, ctv1.x, ctv2.x);
@@ -240,32 +239,19 @@ function createTriangleTextureData(v0, v1, v2, uv0, uv1, uv2, img, rdr, cmr) {
 
 function rand() { return Math.random(); }
 function inrng(val,lb,up) { return lb  <= val && val <= up; }
-function calFVUVs(geo) {
-    
-    if(geo.faceVertexUvs[0].length > 0) {
-    
-        for (i = 0; i < geo.faceVertexUvs[0].length; i++) {
-            for (j = 0; j < geo.faceVertexUvs[0][i].length; j++) {
-                uv = geo.faceVertexUvs[0][i][j];
-                uv.x = uv.x / f.img.b.w + 0.5;
-                uv.y = uv.y / f.img.b.h + 0.5;
-            }
-        }
+function calFVUVs(geo, f) {
+    for (i = 0; i < geo.faces.length ; i++) {
+        geo.faceVertexUvs[0].push([]);
+        for(j = 0; j < 4; j++) {
+            vt = null;
+            if(j == 0) vt = geo.vertices[geo.faces[i].a];   
+            if(j == 1) vt = geo.vertices[geo.faces[i].b];   
+            if(j == 2) vt = geo.vertices[geo.faces[i].c];   
+            if(j == 3 && geo.faces[i].hasOwnProperty('d')) vt = geo.vertices[geo.faces[i].d];   
             
-    } else {
-        for (i = 0; i < geo.faces.length ; i++) {
-            geo.faceVertexUvs[0].push([]);
-            for(j = 0; j < 4; j++) {
-                vt = null;
-                if(j == 0) vt = geo.vertices[geo.faces[i].a];   
-                if(j == 1) vt = geo.vertices[geo.faces[i].b];   
-                if(j == 2) vt = geo.vertices[geo.faces[i].c];   
-                if(j == 3 && geo.faces[i].hasOwnProperty('d')) vt = geo.vertices[geo.faces[i].d];   
-                
-                if(vt) {
-                    uv = new THREE.Vector2(vt.x / f.img.b.w + 0.5, vt.y / f.img.b.h + 0.5);
-                    geo.faceVertexUvs[0][i].push(uv);
-                }
+            if(vt) {
+                uv = new THREE.Vector2(vt.x / f.img.b.w + 0.5, vt.y / f.img.b.h + 0.5);
+                geo.faceVertexUvs[0][i].push(uv);
             }
         }
     }
