@@ -21,8 +21,22 @@ THREE.WebGLRenderer = function ( parameters ) {
 	_stencil = parameters.stencil !== undefined ? parameters.stencil : true,
 	_preserveDrawingBuffer = parameters.preserveDrawingBuffer !== undefined ? parameters.preserveDrawingBuffer : false,
 
-	_clearColor = parameters.clearColor !== undefined ? new THREE.Color( parameters.clearColor ) : new THREE.Color( 0x000000 ),
-	_clearAlpha = parameters.clearAlpha !== undefined ? parameters.clearAlpha : 0;
+	_clearColor = new THREE.Color( 0x000000 ),
+	_clearAlpha = 0;
+
+	if ( parameters.clearColor !== undefined ) {
+
+		console.warn( 'DEPRECATED: clearColor in WebGLRenderer constructor parameters is being removed. Use .setClearColor() instead.' );
+		_clearColor.setHex( parameters.clearColor );
+
+	}
+
+	if ( parameters.clearAlpha !== undefined ) {
+
+		console.warn( 'DEPRECATED: clearAlpha in WebGLRenderer constructor parameters is being removed. Use .setClearColor() instead.' );
+		_clearAlpha = parameters.clearAlpha;
+
+	}
 
 	// public properties
 
@@ -44,9 +58,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	// scene graph
 
 	this.sortObjects = true;
-
 	this.autoUpdateObjects = true;
-	this.autoUpdateScene = true;
 
 	// physically based shading
 
@@ -293,13 +305,17 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
-	this.setSize = function ( width, height ) {
+	this.setSize = function ( width, height, updateStyle ) {
 
 		_canvas.width = width * this.devicePixelRatio;
 		_canvas.height = height * this.devicePixelRatio;
 
-		_canvas.style.width = width + 'px';
-		_canvas.style.height = height + 'px';
+		if ( this.devicePixelRatio !== 1 && updateStyle !== false ) {
+
+			_canvas.style.width = width + 'px';
+			_canvas.style.height = height + 'px';
+
+		}
 
 		this.setViewport( 0, 0, _canvas.width, _canvas.height );
 
@@ -331,21 +347,19 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// Clearing
 
-	this.setClearColorHex = function ( hex, alpha ) {
+	this.setClearColor = function ( color, alpha ) {
 
-		_clearColor.setHex( hex );
-		_clearAlpha = alpha;
+		_clearColor.set( color );
+		_clearAlpha = alpha !== undefined ? alpha : 1;
 
 		_gl.clearColor( _clearColor.r, _clearColor.g, _clearColor.b, _clearAlpha );
 
 	};
 
-	this.setClearColor = function ( color, alpha ) {
+	this.setClearColorHex = function ( hex, alpha ) {
 
-		_clearColor.copy( color );
-		_clearAlpha = alpha;
-
-		_gl.clearColor( _clearColor.r, _clearColor.g, _clearColor.b, _clearAlpha );
+		console.warn( 'DEPRECATED: .setClearColorHex() is being removed. Use .setClearColor() instead.' );
+		this.setClearColor( hex, alpha );
 
 	};
 
@@ -3955,7 +3969,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		} else {
 
-			return b.id - a.id;
+			return a.id - b.id;
 
 		}
 
@@ -3994,7 +4008,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		// update scene graph
 
-		if ( this.autoUpdateScene ) scene.updateMatrixWorld();
+		if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
 
 		// update camera matrices and frustum
 
@@ -4037,6 +4051,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 			webglObject = renderList[ i ];
 			object = webglObject.object;
 
+			webglObject.id = i;
 			webglObject.render = false;
 
 			if ( object.visible ) {
@@ -4063,8 +4078,6 @@ THREE.WebGLRenderer = function ( parameters ) {
 							webglObject.z = _vector3.z;
 
 						}
-
-						webglObject.id = object.id;
 
 					}
 
@@ -4486,7 +4499,23 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		for ( var o = 0, ol = scene.__webglObjects.length; o < ol; o ++ ) {
 
-			updateObject( scene.__webglObjects[ o ].object );
+			var object = scene.__webglObjects[ o ].object;
+
+			// TODO: Remove this hack (WebGLRenderer refactoring)
+
+			if ( object.__webglInit === undefined ) {
+
+				if ( object.__webglActive !== undefined ) {
+
+					removeObject( object, scene );
+
+				}
+
+				addObject( object, scene );
+
+			}
+
+			updateObject( object );
 
 		}
 
@@ -4494,11 +4523,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// Objects adding
 
-	function addObject ( object, scene ) {
+	function addObject( object, scene ) {
 
 		var g, geometry, material, geometryGroup;
 
-		if ( ! object.__webglInit ) {
+		if ( object.__webglInit === undefined ) {
 
 			object.__webglInit = true;
 
@@ -4599,7 +4628,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		if ( ! object.__webglActive ) {
+		if ( object.__webglActive === undefined ) {
 
 			if ( object instanceof THREE.Mesh ) {
 
@@ -4648,7 +4677,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
-	function addBuffer ( objlist, buffer, object ) {
+	function addBuffer( objlist, buffer, object ) {
 
 		objlist.push(
 			{
@@ -4661,7 +4690,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
-	function addBufferImmediate ( objlist, object ) {
+	function addBufferImmediate( objlist, object ) {
 
 		objlist.push(
 			{
@@ -4675,7 +4704,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// Objects updates
 
-	function updateObject ( object ) {
+	function updateObject( object ) {
 
 		var geometry = object.geometry,
 			geometryGroup, customAttributesDirty, material;
@@ -4784,7 +4813,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// Objects updates - custom attributes check
 
-	function areCustomAttributesDirty ( material ) {
+	function areCustomAttributesDirty( material ) {
 
 		for ( var a in material.attributes ) {
 
@@ -4796,7 +4825,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
-	function clearCustomAttributes ( material ) {
+	function clearCustomAttributes( material ) {
 
 		for ( var a in material.attributes ) {
 
@@ -4808,7 +4837,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	// Objects removal
 
-	function removeObject ( object, scene ) {
+	function removeObject( object, scene ) {
 
 		if ( object instanceof THREE.Mesh  ||
 			 object instanceof THREE.ParticleSystem ||
@@ -4831,11 +4860,11 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		}
 
-		object.__webglActive = false;
+		delete object.__webglActive;
 
 	};
 
-	function removeInstances ( objlist, object ) {
+	function removeInstances( objlist, object ) {
 
 		for ( var o = objlist.length - 1; o >= 0; o -- ) {
 
@@ -4849,7 +4878,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 	};
 
-	function removeInstancesDirect ( objlist, object ) {
+	function removeInstancesDirect( objlist, object ) {
 
 		for ( var o = objlist.length - 1; o >= 0; o -- ) {
 
@@ -5699,9 +5728,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 	function setupMatrices ( object, camera ) {
 
 		object._modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-
-		object._normalMatrix.getInverse( object._modelViewMatrix );
-		object._normalMatrix.transpose();
+		object._normalMatrix.getNormalMatrix( object._modelViewMatrix );
 
 	};
 
@@ -6431,8 +6458,8 @@ THREE.WebGLRenderer = function ( parameters ) {
 
 		].join("\n");
 
-		var glFragmentShader = getShader( "fragment", prefix_fragment + fragmentShader );
 		var glVertexShader = getShader( "vertex", prefix_vertex + vertexShader );
+		var glFragmentShader = getShader( "fragment", prefix_fragment + fragmentShader );
 
 		_gl.attachShader( program, glVertexShader );
 		_gl.attachShader( program, glFragmentShader );

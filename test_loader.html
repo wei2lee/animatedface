@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+    <link href='http://reset5.googlecode.com/hg/reset.min.css' rel='stylesheet' type='text/css'>
+
+    <script src="js/jquery-2.0.0.min.js"></script>
+    <script src="js/jquery.json-2.4.js"></script>
+    <script src="js/sprintf-0.7-beta1.js"></script>
+    <script src="js/threejs/build/three.js"></script>
+    <script src="js/threejsex.js"></script>
+    <script src="js/CanvasRenderer.js"></script>
+    <script src="js/MeshBasicMaterial.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/sprintf.min.js"></script>
+
+    
+	<style>
+		* {
+			font-family: 'Open Sans', sans-serif;
+			font-size: 15px;
+			line-height:17px;
+			
+		}
+		
+		body {
+			margin: 10px;
+            background-color: #222222;
+		}
+	
+		.dialog {
+            background-color:rgba(251, 251, 251, 0.5);
+            position:relative;
+            min-height:47px;
+			padding:4px 2px 2px 6px;
+			
+			border:1px solid #cccccc;
+			margin:5px;
+			
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+            display:none;
+		}
+		#dlg2 {
+			display:block;
+		}
+        
+        #log {
+            min-height:0px;
+			-moz-user-select: none; 
+			-khtml-user-select: none; 
+			-webkit-user-select: none; 
+			-o-user-select: none; 
+        }
+		
+		#btnnext {
+            position:absolute;
+            bottom:5px;
+            right:5px;
+			float:right;
+			width:100px;
+			height:30px;
+			
+		}
+		
+		.ct {
+			margin:5px; 
+			display:inline-block;
+			width:512px;
+			height:512px;
+			border:1px solid #cccccc;
+		}
+        
+        #fps_stats {
+            position:absolute;
+            top:5px;
+            right:85px;
+        }
+        
+        
+		
+		.clear {
+			clear:both;
+		}
+		
+
+} 
+    </style>
+    
+	
+	
+    <body id=body></body>
+	
+	<div class=dialog id=dlg1>
+	<div id=instruction></div>
+	<input type=button id=btnnext value=Next>	
+	<div class=clear></div>
+	</div>
+    
+    <div class=dialog id=dlg2>
+        <div id=log></div>
+    </div>
+</html>
+    
+<script>
+	var sc, ct, rdr, cmr;
+    var mh, ge, ma;
+	var fps;
+
+    init();
+    
+    function init() {
+        cmr = new THREE.PerspectiveCamera( 70, 1, 1, 1000 );
+        cmr.position.z = 4;
+        
+        sc = new THREE.Scene();
+        ct = document.createElement('div');
+		ct.id = 'cvsct';
+		ct.className  = 'ct';
+        document.body.appendChild(ct);
+
+        rdr = new THREE.WebGLRenderer();
+        rdr.setSize(512, 512);
+        rdr.domElement.id = 'mycanvas';
+        ct.appendChild(rdr.domElement);
+        
+        fps = new Stats();
+        fps.setMode(0); // 0: fps, 1: ms
+        fps.domElement.style.position = 'absolute';
+        fps.domElement.style.right = '2px';
+        fps.domElement.style.bottom = '2px';
+        $('#dlg2')[0].appendChild( fps.domElement );
+
+        initScene();
+        animate();
+    }
+    function initScene() {
+        
+        console.log('loading');
+        /*
+        var ldr = new THREE.JSONLoader();
+        ldr.load('json/mywood2box.js', function(geo, mats) {
+            console.log('loaded');
+            console.log('geo.vertices.length='+geo.vertices.length);
+            console.log('geo.faces.length='+geo.faces.length);
+            console.log('materials.length='+mats.length);
+            
+            
+            //var ma = new THREE.MeshBasicMaterial({wireframe:true, color:0xff5555});
+            ma = mats[0];
+            mh = new THREE.Mesh(geo, ma);
+            
+            var dli = new THREE.DirectionalLight( 0xffffff, 1 );
+            dli.position.set( -1, 1, +1 );
+            sc.add( dli );
+            
+            sc.add(mh);
+        });
+        //*/
+        
+
+
+        var callbackProgress = function( progress, result ) {
+
+            var bar = 1,
+                total = progress.totalModels + progress.totalTextures,
+                loaded = progress.loadedModels + progress.loadedTextures;
+
+            console.log(sprintf('callbackProgress'));
+        }
+
+        var callbackSync = function( result ) {
+            console.log('callbackSync');
+        }
+
+        var callbackFinished = function ( result ) {
+            console.log('callbackFinished');
+            console.log(result.scene);
+            sc = result.scene;
+            var dli = new THREE.DirectionalLight( 0xffffff, 1 );
+            dli.position.set(-1, -1, 1);
+            sc.add(dli);
+            //cmr = result.currentCameras;
+        }
+        
+        
+        var scldr = new THREE.SceneLoader();
+        scldr.callbackSync = callbackSync;
+        scldr.callbackProgress = callbackProgress;
+
+        scldr.load( "json/scene.js", callbackFinished );
+    }
+    
+    
+    
+    
+
+    function animate() {
+        requestAnimationFrame(animate);
+        update();
+		render();
+        fps.update();
+    }
+
+	function render() {
+        rdr.render(sc, cmr);
+	}
+	function update() {
+        if(mh) {
+            mh.rotation.y += 0.004;
+        }
+	}
+	function render() {
+        rdr.render(sc, cmr);
+	}
+    
+
+</script>

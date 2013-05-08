@@ -77,9 +77,6 @@
 				loader.load( 'textures/land_ocean_ice_cloud_2048.jpg' );
 
 				var geometry = new THREE.SphereGeometry( 200, 20, 20 );
-				console.log("vtxs.length=" + geometry.vertices.length);
-				console.log("fcs.length=" + geometry.faces.length);
-
 				var material = new THREE.MeshBasicMaterial( { map: earthTexture, overdraw: true } );
 
 				var mesh = new THREE.Mesh( geometry, material );

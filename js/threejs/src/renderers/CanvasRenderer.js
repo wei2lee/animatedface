@@ -22,7 +22,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 	_context = _canvas.getContext( '2d' ),
 
 	_clearColor = new THREE.Color( 0x000000 ),
-	_clearOpacity = 0,
+	_clearAlpha = 0,
 
 	_contextGlobalAlpha = 1,
 	_contextGlobalCompositeOperation = 0,
@@ -139,7 +139,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 	this.supportsVertexTextures = function () {};
 	this.setFaceCulling = function () {};
 
-	this.setSize = function ( width, height ) {
+	this.setSize = function ( width, height, updateStyle ) {
 
 		_canvasWidth = width * this.devicePixelRatio;
 		_canvasHeight = height * this.devicePixelRatio;
@@ -150,8 +150,12 @@ THREE.CanvasRenderer = function ( parameters ) {
 		_canvas.width = _canvasWidth;
 		_canvas.height = _canvasHeight;
 
-		_canvas.style.width = width + 'px';
-		_canvas.style.height = height + 'px';
+		if ( this.devicePixelRatio !== 1 && updateStyle !== false ) {
+
+			_canvas.style.width = width + 'px';
+			_canvas.style.height = height + 'px';
+
+		}
 
 		_clipBox.set(
 			new THREE.Vector2( - _canvasWidthHalf, - _canvasHeightHalf ),
@@ -173,22 +177,10 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 	};
 
-	this.setClearColor = function ( color, opacity ) {
+	this.setClearColor = function ( color, alpha ) {
 
-		_clearColor.copy( color );
-		_clearOpacity = opacity !== undefined ? opacity : 1;
-
-		_clearBox.set(
-			new THREE.Vector2( - _canvasWidthHalf, - _canvasHeightHalf ),
-			new THREE.Vector2( _canvasWidthHalf, _canvasHeightHalf )
-		);
-
-	};
-
-	this.setClearColorHex = function ( hex, opacity ) {
-
-		_clearColor.setHex( hex );
-		_clearOpacity = opacity !== undefined ? opacity : 1;
+		_clearColor.set( color );
+		_clearAlpha = alpha !== undefined ? alpha : 1;
 
 		_clearBox.set(
 			new THREE.Vector2( - _canvasWidthHalf, - _canvasHeightHalf ),
@@ -197,7 +189,14 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 	};
 
-	this.getMaxAnisotropy  = function () {
+	this.setClearColorHex = function ( hex, alpha ) {
+
+		console.warn( 'DEPRECATED: .setClearColorHex() is being removed. Use .setClearColor() instead.' );
+		this.setClearColor( hex, alpha );
+
+	};
+
+	this.getMaxAnisotropy = function () {
 
 		return 0;
 
@@ -212,7 +211,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 			_clearBox.intersect( _clipBox );
 			_clearBox.expandByScalar( 2 );
 
-			if ( _clearOpacity < 1 ) {
+			if ( _clearAlpha < 1 ) {
 
 				_context.clearRect(
 					_clearBox.min.x | 0,
@@ -223,12 +222,12 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 			}
 
-			if ( _clearOpacity > 0 ) {
+			if ( _clearAlpha > 0 ) {
 
 				setBlending( THREE.NormalBlending );
 				setOpacity( 1 );
 
-				setFillStyle( 'rgba(' + Math.floor( _clearColor.r * 255 ) + ',' + Math.floor( _clearColor.g * 255 ) + ',' + Math.floor( _clearColor.b * 255 ) + ',' + _clearOpacity + ')' );
+				setFillStyle( 'rgba(' + Math.floor( _clearColor.r * 255 ) + ',' + Math.floor( _clearColor.g * 255 ) + ',' + Math.floor( _clearColor.b * 255 ) + ',' + _clearAlpha + ')' );
 
 				_context.fillRect(
 					_clearBox.min.x | 0,
@@ -255,11 +254,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 		}
 
-		if ( this.autoClear === true ) {
-
-			this.clear();
-
-		}
+		if ( this.autoClear === true ) this.clear();
 
 		_context.setTransform( 1, 0, 0, - 1, _canvasWidthHalf, _canvasHeightHalf );
 
@@ -301,7 +296,10 @@ THREE.CanvasRenderer = function ( parameters ) {
 				_v1.positionScreen.x *= _canvasWidthHalf; _v1.positionScreen.y *= _canvasHeightHalf;
 				_v2.positionScreen.x *= _canvasWidthHalf; _v2.positionScreen.y *= _canvasHeightHalf;
 
-				_elemBox.setFromPoints( [ _v1.positionScreen, _v2.positionScreen ] );
+				_elemBox.setFromPoints( [
+					_v1.positionScreen,
+					_v2.positionScreen
+				] );
 
 				if ( _clipBox.isIntersectionBox( _elemBox ) === true ) {
 
@@ -329,9 +327,17 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 				}
 
-				_elemBox.setFromPoints( [ _v1.positionScreen, _v2.positionScreen, _v3.positionScreen ] );
+				_elemBox.setFromPoints( [
+					_v1.positionScreen,
+					_v2.positionScreen,
+					_v3.positionScreen
+				] );
 
-				renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
+				if ( _clipBox.isIntersectionBox( _elemBox ) === true ) {
+
+					renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
+
+				}
 
 			} else if ( element instanceof THREE.RenderableFace4 ) {
 
@@ -361,9 +367,18 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 				}
 
-				_elemBox.setFromPoints( [ _v1.positionScreen, _v2.positionScreen, _v3.positionScreen, _v4.positionScreen ] );
+				_elemBox.setFromPoints( [
+					_v1.positionScreen,
+					_v2.positionScreen,
+					_v3.positionScreen,
+					_v4.positionScreen
+				] );
 
-				renderFace4( _v1, _v2, _v3, _v4, _v5, _v6, element, material, scene );
+				if ( _clipBox.isIntersectionBox( _elemBox ) === true ) {
+
+					renderFace4( _v1, _v2, _v3, _v4, _v5, _v6, element, material );
+
+				}
 
 			}
 
@@ -487,6 +502,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 					if ( _clipBox.isIntersectionBox( _elemBox ) === false ) {
 
+						_elemBox.makeEmpty();
 						return;
 
 					}
@@ -519,6 +535,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 					if ( _clipBox.isIntersectionBox( _elemBox ) === false ) {
 
+						_elemBox.makeEmpty();
 						return;
 
 					}
@@ -554,6 +571,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 				if ( _clipBox.isIntersectionBox( _elemBox ) === false ) {
 
+					_elemBox.makeEmpty();
 					return;
 
 				}
@@ -588,7 +606,44 @@ THREE.CanvasRenderer = function ( parameters ) {
 				setLineWidth( material.linewidth );
 				setLineCap( material.linecap );
 				setLineJoin( material.linejoin );
-				setStrokeStyle( material.color.getStyle() );
+
+				if ( material.vertexColors !== THREE.VertexColors ) {
+
+					setStrokeStyle( material.color.getStyle() );
+
+				} else {
+
+					var colorStyle1 = element.vertexColors[0].getStyle();
+					var colorStyle2 = element.vertexColors[1].getStyle();
+
+					if ( colorStyle1 === colorStyle2 ) {
+
+						setStrokeStyle( colorStyle1 );
+
+					} else {
+
+						try {
+
+							var grad = _context.createLinearGradient(
+								v1.positionScreen.x,
+								v1.positionScreen.y,
+								v2.positionScreen.x,
+								v2.positionScreen.y
+							);
+							grad.addColorStop( 0, colorStyle1 );
+							grad.addColorStop( 1, colorStyle2 );
+
+						} catch ( exception ) {
+
+							grad = colorStyle1;
+
+						}
+
+						setStrokeStyle( grad );
+
+					}
+
+				}
 
 				_context.stroke();
 				_elemBox.expandByScalar( material.linewidth * 2 );
@@ -1138,7 +1193,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 		function expand( v1, v2 ) {
 
-			var x = v2.x - v1.x, y =  v2.y - v1.y,
+			var x = v2.x - v1.x, y = v2.y - v1.y,
 			det = x * x + y * y, idet;
 
 			if ( det === 0 ) return;
