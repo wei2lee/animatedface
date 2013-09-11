@@ -33,8 +33,8 @@ function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image, _cont
     // http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
 
     var a, b, c, d, e, f, det, idet,
-    width = image.width - 1,
-    height = image.height - 1;
+    width = image.width - 0,
+    height = image.height - 0;
 
     u0 *= width; v0 *= height;
     u1 *= width; v1 *= height;
@@ -92,7 +92,7 @@ function projectCvs2World(vt, rdr, cmr) {
     return vt;
 }
 
-function createTriangleTextureMesh(mh) {
+function createTriangleTextureMesh(mh, rdr, cmr) {
     var ge = mh.geometry;
     var ma = mh.material;
     var data = null;
@@ -114,7 +114,7 @@ function createTriangleTextureMesh(mh) {
             var uv0 = ge.faceVertexUvs[0][i][0];
             var uv1 = ge.faceVertexUvs[0][i][1];
             var uv2 = ge.faceVertexUvs[0][i][2];
-            data = createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, ma.map.image, rdr, cmr);
+            data = createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, ma.map.image);
             data.ma.side = mh.material.side;
             tma.materials.push(data.ma);
             tf31.materialIndex = tma.materials.length - 1;
@@ -206,8 +206,10 @@ function createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, img) {
     ctub.x = Math.max(ctv0.x, ctv1.x, ctv2.x);
     ctub.y = Math.max(ctv0.y, ctv1.y, ctv2.y);
 
-    cvs.width = ctub.x - ctlb.x;
-    cvs.height = ctub.y - ctlb.y;
+    cvs.width = Math.ceil(ctub.x - ctlb.x);
+    cvs.height = Math.ceil(ctub.y - ctlb.y);
+
+    console.log(ctub.x + ',' + ctlb.x + ':' + cvs.width + ',' + cvs.height);
     ctx.clearRect(0, 0, cvs.width, cvs.height);
     
     ctv0.x -= ctlb.x;
@@ -215,9 +217,18 @@ function createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, img) {
     ctv1.x -= ctlb.x;
     ctv1.y -= ctlb.y;
     ctv2.x -= ctlb.x;
-    ctv2.y -= ctlb.y;        
+    ctv2.y -= ctlb.y;   
+
+    ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.fillRect( 0, 0, cvs.width, cvs.height );
+
     drawTriangle(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctx);
     clipImage(ctv0.x, ctv0.y, ctv1.x, ctv1.y, ctv2.x, ctv2.y, ctuv0.x, ctuv0.y, ctuv1.x, ctuv1.y, ctuv2.x, ctuv2.y, img, ctx);
+    
+    var filtered = Filters.filterImage(Filters.removeTranslucentPixel, ctx, cvs.width, cvs.height, ctx, null);
+    ctx.putImageData(filtered, 0, 0);
+    
+    
     dataimg.src = cvs.toDataURL();
     
     
@@ -234,7 +245,65 @@ function createTriangleTexture(v0, v1, v2, uv0, uv1, uv2, img) {
     return {ma:datama, tex:datatex, imgdom:dataimg, uv0:new THREE.Vector2().copy(ctuv0), uv1:new THREE.Vector2().copy(ctuv1), uv2:new THREE.Vector2().copy(ctuv2)};
 }
 
+Filters = {};
+Filters.getPixels = function(img, w, h) {
+  var ctx;
+  
+  if(img.getImageData === undefined) {
+    var c = this.getCanvas(img.width, img.height);
+    ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);          
+    return ctx.getImageData(0,0,c.width,c.height);
+  }else{
+    ctx = img;     
+    return ctx.getImageData(0,0,w,h);
+  }
+  
+};
 
+Filters.getCanvas = function(w,h) {
+      var c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      return c;
+};
+Filters.filterImage = function(filter, image, w, h, var_args) {
+  var args = [this.getPixels(image, w, h)];
+  for (var i=4; i<arguments.length; i++) {
+    args.push(arguments[i]);
+  }
+  return filter.apply(null, args);
+};
+Filters.removeTranslucentPixel = function(pixels, args) {
+  var d = pixels.data;
+  for (var i=0; i<d.length; i+=4) {
+    var r = d[i];
+    var g = d[i+1];
+    var b = d[i+2];
+    var a = d[i+3];
+
+    //if(a == 0) { r = g = b = 0; }
+    //else if(a == 255) { r = g = b = 128; }
+    
+    if(0 < a && a < 255) {
+        //r = 255;
+        //g = 0;
+        //b = 0;
+        a = 255;
+    }else if(0 && a == 0) {
+        r = 0;
+        g = 0;
+        b = 255;
+        a = 255;
+    }
+      
+    d[i] = r;
+    d[i+1] = g;
+    d[i+2] = b;
+    d[i+3] = a;
+  }
+  return pixels;
+};
 
 
 function rand() { return Math.random(); }

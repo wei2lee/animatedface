@@ -1,334 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-    <link href='http://reset5.googlecode.com/hg/reset.min.css' rel='stylesheet' type='text/css'>
+	<head>
+		<title>learningthree.js boiler plate for three.js</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		
+			
+		<!--<script src="vendor/three.js/Three.js"></script>-->
+		<script src="js/Three.js"></script>
+		<script src="vendor/three.js/Detector.js"></script>
+		<!-- https://github.com/mrdoob/stats.js -->
+		<script src="vendor/three.js/Stats.js"></script>
 
-    <script src="js/jquery-2.0.0.min.js"></script>
-    <script src="js/jquery.json-2.4.js"></script>
-    <script src="js/sprintf-0.7-beta1.js"></script>
-    <script src="js/threejs/build/three.js"></script>
-    <script src="js/threejsex.js"></script>
-    <script src="js/CanvasRenderer.js"></script>
-    <script src="js/MeshBasicMaterial.js"></script>
-    <script src="js/Stats.js"></script>
-    <script src="js/sprintf.min.js"></script>
+		<script src="vendor/threex/THREEx.screenshot.js"></script>
+		<script src="vendor/threex/THREEx.FullScreen.js"></script>
+		<script src="vendor/threex/THREEx.WindowResize.js"></script>
+		<script src="vendor/threex.dragpancontrols.js"></script>
 
-    
-	<style>
-		* {
-			font-family: 'Open Sans', sans-serif;
-			font-size: 15px;
-			line-height:17px;
-			
-		}
-		
-		body {
-			margin: 10px;
-            background-color: #222222;
-		}
-	
-		.dialog {
-            background-color:rgba(251, 251, 251, 0.5);
-            position:relative;
-            min-height:47px;
-			padding:4px 2px 2px 6px;
-			
-			border:1px solid #cccccc;
-			margin:5px;
-			
-			-moz-user-select: none; 
-			-khtml-user-select: none; 
-			-webkit-user-select: none; 
-			-o-user-select: none; 
-            display:none;
-		}
-		#dlg2 {
-			display:block;
-		}
-        
-        #log {
-            min-height:0px;
-			-moz-user-select: none; 
-			-khtml-user-select: none; 
-			-webkit-user-select: none; 
-			-o-user-select: none; 
-        }
-		
-		#btnnext {
-            position:absolute;
-            bottom:5px;
-            right:5px;
-			float:right;
-			width:100px;
-			height:30px;
-			
-		}
-		
-		.ct {
-			margin:5px; 
-			display:inline-block;
-			width:512px;
-			height:512px;
-			border:1px solid #cccccc;
-		}
-        
-        #fps_stats {
-            position:absolute;
-            top:5px;
-            right:85px;
-        }
-        
-        
-		
-		.clear {
-			clear:both;
-		}
-		
+	    <script src="js/threejsex.js"></script>
+	    <script src="js/CanvasRenderer.js"></script>
+	    <script src="js/MeshBasicMaterial.js"></script>
 
-} 
-    </style>
-    
-	
-	
-    <body id=body></body>
-	
-	<div class=dialog id=dlg1>
-	<div id=instruction></div>
-	<input type=button id=btnnext value=Next>	
-	<div class=clear></div>
-	</div>
-    
-    <div class=dialog id=dlg2>
-        <div id=log></div>
-    </div>
+
+		<link  href="css/main.css" rel="stylesheet"/>
+	</head>
+<body>
+	<!-- three.js container -->
+    	<div id="container"></div>
+	<!-- info on screen display -->
+	<div id="info">
+		<div class="top">
+			<a href="http://learningthreejs.com/blog/2011/12/20/boilerplate-for-three-js/" target="_blank">LearningThree.js</a>
+			boiler plate for
+			<a href="https://github.com/mrdoob/three.js/" target="_blank">three.js</a>
+		</div>
+		<div class="bottom" id="inlineDoc" >
+			- <i>p</i> for screenshot
+		</div> 
+	</div> 
+
+	<script type="text/javascript">
+		var stats, scene, renderer, composer;
+		var camera, cameraControl;
+
+		var mh, ge, ma;
+		var f = {
+			img: {
+				src:'images/monalisa.jpg',
+				dom:null,
+				b:{x:0, y:0, w:225, h:225}
+			}
+		
+		};
+
+	    f.img.dom = new Image();
+	    f.img.dom.onload = function(){ init();  animate(); }
+	    f.img.dom.src = f.img.src;
+
+
+		// init the scene
+		function init(){
+			console.log("init");
+			if( 0 && Detector.webgl ){
+				renderer = new THREE.WebGLRenderer({
+					antialias		: true,	// to get smoother output
+					preserveDrawingBuffer	: true	// to allow screenshot
+				});
+				renderer.setClearColorHex( 0xFFBBBB, 1 );
+			}else{
+				renderer	= new THREE.CanvasRenderer();
+			}
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.getElementById('container').appendChild(renderer.domElement);
+
+			// add Stats.js - https://github.com/mrdoob/stats.js
+			stats = new Stats();
+			stats.domElement.style.position	= 'absolute';
+			stats.domElement.style.bottom	= '0px';
+			document.body.appendChild( stats.domElement );
+
+			// create a scene
+			scene = new THREE.Scene();
+
+			console.log(scene);
+
+			// put a camera in the scene
+			//camera	= new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 10000 );
+			camera  = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
+			camera.position.set(0, 0, 5);
+			scene.add(camera);
+
+			// create a camera contol
+			cameraControls	= new THREEx.DragPanControls(camera)
+
+			// transparently support window resize
+			THREEx.WindowResize.bind(renderer, camera);
+			// allow 'p' to make screenshot
+			THREEx.Screenshot.bindKey(renderer);
+			// allow 'f' to go fullscreen where this feature is supported
+			if( THREEx.FullScreen.available() ){
+				THREEx.FullScreen.bindKey();		
+				document.getElementById('inlineDoc').innerHTML	+= "- <i>f</i> for fullscreen";
+			}
+
+			// here you add your objects
+			// - you will most likely replace this part by your own
+
+			/*
+			var light	= new THREE.DirectionalLight( Math.random() * 0xffffff );
+			light.position.set( Math.random(), Math.random(), Math.random() ).normalize();
+			scene.add( light );
+			var light	= new THREE.DirectionalLight( Math.random() * 0xffffff );
+			light.position.set( Math.random(), Math.random(), Math.random() ).normalize();
+			scene.add( light );
+			var light	= new THREE.PointLight( Math.random() * 0xffffff );
+			light.position.set( Math.random()-0.5, Math.random()-0.5, Math.random()-0.5 )
+						.normalize().multiplyScalar(1.2);
+			scene.add( light );
+			var light	= new THREE.PointLight( Math.random() * 0xffffff );
+			light.position.set( Math.random()-0.5, Math.random()-0.5, Math.random()-0.5 )
+						.normalize().multiplyScalar(1.2);
+			scene.add( light );
+			//*/
+			//var geometry	= new THREE.TorusGeometry( 1, 0.42, 16, 16 );
+			//var material	= new THREE.MeshLambertMaterial({ambient: 0x808080, color: Math.random() * 0xffffff});
+			//var material    = new THREE.MeshBasicMaterial({color:0xff3333});
+			//var mesh	= new THREE.Mesh( geometry, material ); 
+			//scene.add( mesh );
+
+
+			initScene();
+
+		}
+	    function initScene() {
+	        
+	        mh = new THREE.Mesh();
+	        mh.position.z = -10;
+
+
+	        var mhscale=0.1;
+	        mh.scale=new THREE.Vector3(mhscale,mhscale,mhscale);
+	        mh.material = ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(f.img.dom), side:THREE.DoubleSide});
+	        //mh.material =new THREE.MeshBasicMaterial({color:0xff5555});
+	        mh.geometry = ge = new THREE.Geometry();
+	        var i, j, k, mi = 9, mj = 9;
+	        ge.mi = mi; ge.mj = mj;
+	        var data;
+	        for(i = 0 ; i < mi ; i++) {
+	            for(j = 0 ; j < mj ; j++) {
+	                k = j + i * mj;
+	                vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
+	                vt.o = {};
+	                vt.o.x = vt.x;
+	                vt.o.y = vt.y;
+	                vt.o.z = vt.z;
+	                ge.vertices.push(vt);
+	                if(i > 0 && j > 0) {
+	                    var f31 = new THREE.Face3(k - mj - 1, k - mj, k);
+	                    var  f32 = new THREE.Face3(k, k - 1, k - mj - 1);
+	                    var v0 = ge.vertices[f31.a];
+	                    var v1 = ge.vertices[f31.b];
+	                    var v2 = ge.vertices[f31.c];
+	                    var v3 = ge.vertices[f32.b];
+	                    var uv0 = new THREE.Vector2(v0.x/f.img.b.w+0.5, v0.y/f.img.b.h+0.5);
+	                    var uv1 = new THREE.Vector2(v1.x/f.img.b.w+0.5, v1.y/f.img.b.h+0.5);
+	                    var uv2 = new THREE.Vector2(v2.x/f.img.b.w+0.5, v2.y/f.img.b.h+0.5);
+	                    var uv3 = new THREE.Vector2(v3.x/f.img.b.w+0.5, v3.y/f.img.b.h+0.5);
+
+	                    ge.faces.push(f31);
+	                    ge.faceVertexUvs[0].push([new THREE.Vector2().copy(uv0), new THREE.Vector2().copy(uv1), new THREE.Vector2().copy(uv2)]);
+	                    
+	                    ge.faces.push(f32);
+	                    ge.faceVertexUvs[0].push([new THREE.Vector2().copy(uv2), new THREE.Vector2().copy(uv3), new THREE.Vector2().copy(uv0)]);
+	                    
+	                }
+	            }
+	        }
+
+	        createTriangleTextureMesh(mh, renderer, camera);
+	        ge.computeBoundingSphere();
+	        scene.add(mh);
+
+
+	        //var mhwf = mh.clone();
+	        //mhwf.material = new THREE.LineBasicMaterial({color:0xff0000});
+	        //scene.add(mhwf);
+	    }
+		// animation loop
+		function animate() {
+
+			// loop on request animation loop
+			// - it has to be at the begining of the function
+			// - see details at http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+			requestAnimationFrame( animate );
+
+			// do the render
+			render();
+
+			// update stats
+			stats.update();
+		}
+
+		// render the scene
+		function render() {
+			// variable which is increase by Math.PI every seconds - usefull for animation
+			var PIseconds	= Date.now() * Math.PI;
+
+			// update camera controls
+			cameraControls.update();
+
+			// animation of all objects
+			/*
+			for( var i = 0; i < scene.children.length; i ++ ){
+				scene.children[ i ].rotation.y = PIseconds*0.0003 * (i % 2 ? 1 : -1);
+				scene.children[ i ].rotation.x = PIseconds*0.0002 * (i % 2 ? 1 : -1);
+			}//*/
+
+			// actually render the scene
+			renderer.render( scene, camera );
+		}
+	</script>
+</body>
 </html>
-    
-<script>
-	var f = {
-		img: {
-			src:'images/monalisa.jpg',
-			dom:null,
-			b:{x:0, y:0, w:225, h:225}
-		}
-	
-	};
-	
-	var sc, ct, rdr, cmr;
-    var mh, ge, ma;
-	var fps;
-	
-    f.img.dom = new Image();
-    f.img.dom.onload = init;    
-    f.img.dom.src = f.img.src;
-    
-    function init() {
-        f.img.tex = THREE.ImageUtils.loadTexture(f.img.src);
-        f.img.b.w = f.img.dom.width*2;
-        f.img.b.h = f.img.dom.height*2;
-        
-        
-        var fsw = 512;
-        var fsh = 512;
-        //cmr = new THREE.OrthographicCamera(-fsw/2, +fsw/2, +fsh/2, -fsw/2, -1256, +1256);
-        cmr = new THREE.PerspectiveCamera( 70, 1, 1, 1000 );
-        cmr.position.z = 512;
-        
-        sc = new THREE.Scene();
-        ct = document.createElement('div');
-		ct.id = 'cvsct';
-		ct.className  = 'ct';
-        document.body.appendChild(ct);
-
-        rdr = new THREE.CanvasRenderer();
-        //rdr.sortObjects = false;
-        //rdr.sortElements = false;
-        rdr.setSize(512, 512);
-        rdr.domElement.id = 'mycanvas';
-        ct.appendChild(rdr.domElement);
-        
-		
-		
-        fps = new Stats();
-        fps.setMode(0); // 0: fps, 1: ms
-        fps.domElement.style.position = 'absolute';
-        fps.domElement.style.right = '2px';
-        fps.domElement.style.bottom = '2px';
-        $('#dlg2')[0].appendChild( fps.domElement );
-		
-		$('body').mousedown(onMouseDown);
-		$('body').mouseup(onMouseUp);
-		$('body').mousemove(onMouseMove);
-        
-        initScene();
-        animate();
-    }
-    function initScene() {
-        
-        mh = new THREE.Mesh();
-        mh.position.z = 100;
-        mh.material = ma = new THREE.MeshBasicMaterial({map:new THREE.Texture(f.img.dom), side:THREE.DoubleSide});
-        //mh.material =new THREE.MeshBasicMaterial({color:0xff5555});
-        mh.geometry = ge = new THREE.Geometry();
-        var i, j, k, mi = 11, mj = 11;
-        ge.mi = mi; ge.mj = mj;
-        var data;
-        for(i = 0 ; i < mi ; i++) {
-            for(j = 0 ; j < mj ; j++) {
-                k = j + i * mj;
-                vt = new THREE.Vector3(-f.img.b.w/2 + f.img.b.w/(mj-1)*j, -f.img.b.h/2 + f.img.b.h/(mi-1)*i, 0);
-                vt.o = {};
-                vt.o.x = vt.x;
-                vt.o.y = vt.y;
-                vt.o.z = vt.z;
-                ge.vertices.push(vt);
-                if(i > 0 && j > 0) {
-                    var f31 = new THREE.Face3(k - mj - 1, k - mj, k);
-                    var  f32 = new THREE.Face3(k, k - 1, k - mj - 1);
-                    var v0 = ge.vertices[f31.a];
-                    var v1 = ge.vertices[f31.b];
-                    var v2 = ge.vertices[f31.c];
-                    var v3 = ge.vertices[f32.b];
-                    var uv0 = new THREE.Vector2(v0.x/f.img.b.w+0.5, v0.y/f.img.b.h+0.5);
-                    var uv1 = new THREE.Vector2(v1.x/f.img.b.w+0.5, v1.y/f.img.b.h+0.5);
-                    var uv2 = new THREE.Vector2(v2.x/f.img.b.w+0.5, v2.y/f.img.b.h+0.5);
-                    var uv3 = new THREE.Vector2(v3.x/f.img.b.w+0.5, v3.y/f.img.b.h+0.5);
-
-                    ge.faces.push(f31);
-                    ge.faceVertexUvs[0].push([new THREE.Vector2().copy(uv0), new THREE.Vector2().copy(uv1), new THREE.Vector2().copy(uv2)]);
-                    
-                    ge.faces.push(f32);
-                    ge.faceVertexUvs[0].push([new THREE.Vector2().copy(uv2), new THREE.Vector2().copy(uv3), new THREE.Vector2().copy(uv0)]);
-                    
-                }
-            }
-        }
-
-        createTriangleTextureMesh(mh);
-        ge.computeBoundingSphere();
-        sc.add(mh);
-        
-        
-        
-        /*
-        var vtxs1 = [new THREE.Vector3(250, 0), new THREE.Vector3(0, 250), new THREE.Vector3(0, 0)];
-        var vtxs2 = [new THREE.Vector3().copy(vtxs1[0]), new THREE.Vector3().copy(vtxs1[1]), new THREE.Vector3().copy(vtxs1[2])];
-        
-        expand(vtxs2[0], vtxs2[1]);
-        expand(vtxs2[1], vtxs2[2]);
-        expand(vtxs2[2], vtxs2[0]);
-        
-        console.log('red');
-        console.log(vtxs1);
-        console.log('blue');
-        console.log(vtxs2);        
-        var mht1 = new THREE.Mesh()
-        var get1 = new THREE.Geometry();
-        get1.faces.push(new THREE.Face3(0,1,2));
-        get1.vertices = vtxs1;
-        mht1.geometry = get1;
-        mht1.position = new THREE.Vector3(-0, -0, 0);
-        
-        var mat1 = new THREE.MeshBasicMaterial({wireframe:true, color:0xff0000});
-        mht1.material = mat1;
-        get1.computeBoundingSphere();
-        sc.add(mht1);
-        
-        var mht2 = new THREE.Mesh()
-        var get2 = new THREE.Geometry();
-        get2.faces.push(new THREE.Face3(0,1,2));
-        get2.vertices = vtxs2;
-        var mat2 = new THREE.MeshBasicMaterial({wireframe:true, color:0x0000ff});
-        mht2.geometry = get2;
-        mht2.material = mat2;        
-        mht2.position = new THREE.Vector3(-0, -0, 0);
-        get2.computeBoundingSphere();
-        sc.add(mht2);//*/
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        update();
-		render();
-        fps.update();
-    }
-
-	function render() {
-        rdr.render(sc, cmr);
-	}
-    
-	var cmrangle = {c:Math.PI/2, t:Math.PI/2, k:0.08};
-	var ctime = 0;
-	var ltime = 0;
-	var el = 0;
-	
-	function update() {
-		if(ltime == 0){ ctime = new Date().getTime();  el = 0; }
-		else { ctime = new Date().getTime(); el = ctime - ltime; }
-		ltime = ctime;
-	
-        cmrangle.c = cmrangle.c + (cmrangle.t - cmrangle.c) * cmrangle.k;
-		cmr.position.x = Math.cos( cmrangle.c ) * 512;
-		cmr.position.z = Math.sin( cmrangle.c ) * 512;
-		cmr.lookAt( sc.position );
-      //*/  
-        
-        var i, j, k, mi = ge.mi, mj = ge.mj;
-        for(i = 0 ; i < mi ; i++) {
-            for(j = 0 ; j < mj ; j++) {
-                k = j + i * mj;
-                vt = ge.vertices[k];
-                
-                a = Math.PI * 2 / (mi - 1) * i;
-                d = Math.sin(a + ctime / 500) * 20;
-                
-                vt.x = vt.o.x + d;
-                vt.z = vt.o.z + d / 2;
-            }
-        }//*/
-        //mh.rotation.z += el / -1500;
-        
-        var msg1 = ge ? sprintf('Animated Mesh with Triangle Texture in Canvas2D: vertices:%d, faces:%d', ge.vertices.length, ge.faces.length) : '';
-        var msg2 = mov ? sprintf('(%.1f, %.1f)', currm.x, currm.y) : '';
-        $('#log').html(msg1);
-	}
-	function render() {
-        rdr.render(sc, cmr);
-	}
-    
-    function projectCvs2World2(vt, rdr, cmr) {
-        vt.x = (vt.x / rdr.domElement.width - 0.5) * (rdr.domElement.width);
-        vt.y = -(vt.y / rdr.domElement.height - 0.5) * (rdr.domElement.height);
-        return vt;
-    }
-	
-	var currm = new THREE.Vector3();
-	var lastm = new THREE.Vector3();
-    var pjvt = new THREE.Vector3();
-	var md = 0;
-    var mov = 0;
-	function onMouseDown(evt) {
-        
-        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
-        lastm.copy(currm);
-		currm.copy(pjvt);
-        
-        if(inrng(evt.pageX-rdr.domElement.offsetLeft, 0, rdr.domElement.width) && inrng(evt.pageY-rdr.domElement.offsetTop, 0, rdr.domElement.height))
-		  md = 1;
-	}
-	
-	function onMouseUp(evt) {
-        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
-        lastm.copy(currm);
-		currm.copy(pjvt);
-		md = 0;
-	}
-	
-	function onMouseMove(evt) {
-        projectCvs2World2(pjvt.set(evt.pageX - rdr.domElement.offsetLeft, evt.pageY - rdr.domElement.offsetTop), rdr, cmr);
-        lastm.copy(currm);
-		currm.copy(pjvt);
-		if(md) cmrangle.t += (currm.x - lastm.x) / -200;
-        
-        mov = inrng(evt.pageX-rdr.domElement.offsetLeft, 0, rdr.domElement.width) && inrng(evt.pageY-rdr.domElement.offsetTop, 0, rdr.domElement.height);
-	}
-	
-</script>

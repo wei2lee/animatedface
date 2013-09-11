@@ -1,4 +1,0 @@
-DEBUG =
-{
-   FPS: false
-};

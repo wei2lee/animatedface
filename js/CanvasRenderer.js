@@ -1084,8 +1084,8 @@ THREE.CanvasRenderer = function ( parameters ) {
 			// http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
 
 			var a, b, c, d, e, f, det, idet,
-			width = image.width - 1,
-			height = image.height - 1;
+			width = image.width - 0,
+			height = image.height - 0;
 
 			u0 *= width; v0 *= height;
 			u1 *= width; v1 *= height;
@@ -1112,11 +1112,12 @@ THREE.CanvasRenderer = function ( parameters ) {
 			_context.save();
 			_context.transform( a, b, c, d, e, f );
 			if(eclip) _context.clip();
+			//_context.clip();
             _context.drawImage( image, 0, 0 );
             
             if(ddraw){ 
                 _context.drawImage( image, 0, 0 );
-                _context.drawImage( image, 0, 0 );
+                //_context.drawImage( image, 0, 0 );
             }
 			_context.restore();
 		}
@@ -1150,7 +1151,7 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 		// Hide anti-alias gaps
 
-		function expand( v1, v2, pixels ) {
+		function expand( v1, v2, pixels ) {return;
             if(pixels === undefined) pixels = 1;
             
 			var x = v2.x - v1.x, y = v2.y - v1.y,
